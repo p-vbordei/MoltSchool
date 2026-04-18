@@ -1,0 +1,26 @@
+name: cli-ci
+on:
+  push:
+    branches: [main]
+    paths: ["cli/**"]
+  pull_request:
+    paths: ["cli/**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        working-directory: cli
+        run: uv sync
+      - name: Lint
+        working-directory: cli
+        run: uv run ruff check .
+      - name: Run CLI tests (fast tier)
+        working-directory: cli
+        run: uv run pytest -v

@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 24 14% 6%;
+    --foreground: 40 15% 92%;
+    --card: 24 12% 9%;
+    --card-foreground: 40 15% 92%;
+    --accent: 28 80% 58%;
+    --accent-foreground: 24 14% 6%;
+    --muted: 24 8% 16%;
+    --muted-foreground: 40 8% 65%;
+    --border: 24 8% 22%;
+    --tier-blessed: 150 50% 50%;
+    --tier-peer: 45 70% 55%;
+    --tier-observed: 24 8% 45%;
+    --radius: 0.5rem;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans, Inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+}
+
+@layer components {
+  .grimoire-border {
+    border: 1px solid hsl(var(--border));
+    background-image: linear-gradient(
+      to bottom right,
+      hsl(var(--card)),
+      hsl(var(--background))
+    );
+  }
+
+  .prose-grimoire {
+    color: hsl(var(--foreground));
+  }
+
+  .prose-grimoire h1,
+  .prose-grimoire h2,
+  .prose-grimoire h3 {
+    font-family: var(--font-serif, Spectral), Georgia, serif;
+    color: hsl(var(--foreground));
+  }
+
+  .prose-grimoire code {
+    background-color: hsl(var(--muted));
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: var(--font-mono, "JetBrains Mono"), monospace;
+    font-size: 0.875em;
+  }
+
+  .prose-grimoire pre {
+    background-color: hsl(var(--muted));
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+
+  .prose-grimoire a {
+    color: hsl(var(--accent));
+    text-decoration: underline;
+  }
+}

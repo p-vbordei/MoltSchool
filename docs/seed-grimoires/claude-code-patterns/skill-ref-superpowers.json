@@ -1,0 +1,14 @@
+{
+  "skill_name": "superpowers",
+  "source": "github:anthropics/superpowers",
+  "version": ">=0.1.0",
+  "install": "plugin install superpowers",
+  "notes": "Behavioural skills for Claude Code: TDD loops, commit helpers, plan execution, brainstorming. Recommended baseline for new team members.",
+  "key_skills": [
+    "test-driven-development",
+    "writing-plans",
+    "executing-plans",
+    "brainstorming",
+    "verification-before-completion"
+  ]
+}

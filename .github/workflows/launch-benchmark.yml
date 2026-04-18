@@ -1,0 +1,73 @@
+name: launch-benchmark
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday 06:00 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - "backend/**"
+      - "scripts/onboarding_benchmark.sh"
+      - ".github/workflows/launch-benchmark.yml"
+
+jobs:
+  onboarding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kindred
+          POSTGRES_PASSWORD: kindred
+          POSTGRES_DB: kindred
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kindred"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      KINDRED_BACKEND_URL: http://127.0.0.1:8000
+      DATABASE_URL: postgresql+psycopg://kindred:kindred@127.0.0.1:5432/kindred
+      KINDRED_OBJECT_STORE: local
+      KINDRED_LOCAL_BLOB_DIR: /tmp/kin-blobs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pipx install uv
+
+      - name: Install backend deps
+        working-directory: backend
+        run: uv sync
+
+      - name: Run migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup uv run uvicorn kindred.api.app:app --host 0.0.0.0 --port 8000 \
+              > /tmp/backend.log 2>&1 &
+          for i in {1..30}; do
+              curl -sf http://127.0.0.1:8000/v1/healthz && break
+              sleep 1
+          done
+
+      - name: Seed grimoires
+        run: python3 scripts/seed_grimoires.py
+
+      - name: Run onboarding benchmark
+        run: ./scripts/onboarding_benchmark.sh --slug claude-code-patterns
+
+      - name: Backend log on failure
+        if: failure()
+        run: cat /tmp/backend.log || true

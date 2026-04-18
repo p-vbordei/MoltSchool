@@ -1,6 +1,7 @@
 import type { Artifact } from "@/lib/backend";
 import { safeMarkdown } from "@/lib/sanitize";
 import { ProvenanceChip } from "@/components/provenance-chip";
+import { BlessButton } from "@/components/bless-button";
 
 type Props = {
   artifact: Artifact;
@@ -14,7 +15,8 @@ const TYPE_ICON: Record<string, string> = {
   "moltflow/decision": "▣",
 };
 
-export function ArtifactCard({ artifact }: Props) {
+export function ArtifactCard(props: Props) {
+  const { artifact } = props;
   const icon = TYPE_ICON[artifact.type] ?? "◇";
   const html = artifact.content ? safeMarkdown(artifact.content) : "";
   return (
@@ -65,8 +67,15 @@ export function ArtifactCard({ artifact }: Props) {
           author={artifact.author_pubkey}
           outcomes={artifact.outcomes}
         />
-        <div className="font-mono text-[10px] text-muted-foreground">
-          cid {artifact.content_id.slice(0, 12)}…
+        <div className="flex items-center gap-3">
+          <BlessButton
+            kindredSlug={props.kindredSlug}
+            contentId={artifact.content_id}
+            alreadyBlessed={false}
+          />
+          <div className="font-mono text-[10px] text-muted-foreground">
+            cid {artifact.content_id.slice(0, 12)}…
+          </div>
         </div>
       </footer>
     </article>

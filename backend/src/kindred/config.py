@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     env: str = "dev"
     rate_limit_ask_per_min: int = 30
     rate_limit_contribute_per_hour: int = 10
+    embedding_provider: str = "fake"
+    openai_api_key: SecretStr | None = None
 
     @property
     def facilitator_signing_key(self) -> bytes:

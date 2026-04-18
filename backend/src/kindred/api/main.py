@@ -11,6 +11,7 @@ from kindred.api.routers import (
     invites,
     kindreds,
     memberships,
+    outcomes,
     users,
 )
 from kindred.api.routers import rollback as rb_router
@@ -35,6 +36,7 @@ app.include_router(memberships.router, prefix="/v1", tags=["memberships"])
 app.include_router(blessings.router, prefix="/v1/kindreds", tags=["blessings"])
 app.include_router(rb_router.router, prefix="/v1/kindreds", tags=["rollback"])
 app.include_router(ask.router, prefix="/v1/kindreds", tags=["ask"])
+app.include_router(outcomes.router, prefix="/v1/ask", tags=["outcomes"])
 
 
 @app.exception_handler(KindredError)

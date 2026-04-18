@@ -44,31 +44,43 @@ npm run dev
 - **src/lib/sanitize.ts** — `safeMarkdown(s)` pipeline
 - **src/middleware.ts** — per-request CSP nonce + strict security headers
 
-## v0 tradeoffs (Plan 07 will revisit)
+## Key Management (self-custody)
 
-### Keystore is server-side
+Owner + agent Ed25519 keypairs are generated **in your browser** on first
+post-login visit (by `src/components/bootstrap-keys.tsx`) and persisted to
+[IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+under the `kindred-keystore` database. The private half **never leaves the
+browser**. Only the public halves are sent to the backend (as part of user
+registration + the agent attestation), and mirrored into two non-httpOnly
+cookies (`kindred-owner-pub`, `kindred-agent-pub`) so the RSC-side proxy can
+forward them as `x-*-pubkey` headers on read calls.
 
-Owner + agent Ed25519 keypairs are (intended to be) minted on first login and
-encrypted at rest with `NEXTAUTH_SECRET`. This means the server can
-technically impersonate you, which is **not self-custody**. We made this
-tradeoff for single-click onboarding; Plan 07 migrates to client-side
-WebCrypto + passkey-wrapped keys so the private half never leaves your
-browser.
+Signing (`Bless` and agent attestations) happens client-side via
+[`@noble/ed25519`](https://github.com/paulmillr/noble-ed25519) — an audited,
+zero-dep implementation chosen over raw WebCrypto SubtleCrypto because
+SubtleCrypto's Ed25519 support is uneven across browsers (Safari was wobbly
+pre-2024). Canonical-JSON + SHA-256 parity with the Python backend is
+verified byte-for-byte by `tests/unit/crypto-keys.test.ts`.
 
-In this v0 commit the JWT callback stubs pubkeys from the OAuth subject.
-Real Ed25519 generation + encrypted persistence is the first follow-up.
+### ⚠ Clearing browser data wipes your keys
+
+If you clear site data for this origin, your Kindred keys are gone. You'll
+re-bootstrap a new pair on next login, but any blessings you signed with the
+old pair will still be valid on the backend — you just can't add new ones
+from the same agent identity. Back up your keys if you care.
+
+### Roadmap: passkey-wrapped keys (v1)
+
+v0.5 stores the private key in IDB plaintext. Anyone with access to your
+browser profile can exfiltrate it. v1 will wrap `sk` with a key derived from
+a passkey's PRF extension so the IDB ciphertext is useless without a
+WebAuthn touch.
 
 ### Only GitHub OAuth is live
 
 Google and Passkey login are disabled placeholder buttons. Passkey in
 particular requires a WebAuthn challenge/response round-trip that we
-haven't wired — Plan 07.
-
-### Bless is server-signed
-
-Bless currently posts `sig: "server-side-v0"` to the backend; the backend
-signs on behalf of the agent with the stored key. Plan 07 moves to
-client-side WebCrypto signing.
+haven't wired — later plan.
 
 ### Rollback UI is read-only
 

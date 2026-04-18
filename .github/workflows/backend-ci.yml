@@ -1,0 +1,56 @@
+name: backend-ci
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**"]
+  pull_request:
+    paths: ["backend/**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kindred
+          POSTGRES_PASSWORD: kindred
+          POSTGRES_DB: kindred
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U kindred"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        working-directory: backend
+        run: uv sync
+      - name: Lint
+        working-directory: backend
+        run: uv run ruff check .
+      - name: Run unit + api + e2e tests (sqlite)
+        working-directory: backend
+        env:
+          KINDRED_DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          KINDRED_OBJECT_STORE_ENDPOINT: "http://localhost:0"
+          KINDRED_OBJECT_STORE_ACCESS_KEY: x
+          KINDRED_OBJECT_STORE_SECRET_KEY: x
+          KINDRED_OBJECT_STORE_BUCKET: x
+          KINDRED_FACILITATOR_SIGNING_KEY_HEX: "00000000000000000000000000000000000000000000000000000000000000aa"
+        run: uv run pytest -v --cov=kindred --cov-report=term-missing
+      - name: Migration check
+        working-directory: backend
+        env:
+          KINDRED_DATABASE_URL: "postgresql+asyncpg://kindred:kindred@localhost:5432/kindred"
+          KINDRED_OBJECT_STORE_ENDPOINT: "http://localhost:9000"
+          KINDRED_OBJECT_STORE_ACCESS_KEY: x
+          KINDRED_OBJECT_STORE_SECRET_KEY: x
+          KINDRED_OBJECT_STORE_BUCKET: x
+          KINDRED_FACILITATOR_SIGNING_KEY_HEX: "00000000000000000000000000000000000000000000000000000000000000aa"
+        run: uv run alembic upgrade head

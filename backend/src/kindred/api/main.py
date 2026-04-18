@@ -48,3 +48,12 @@ async def kindred_error_handler(request: Request, exc: KindredError):
         status_code=status,
         content={"error": type(exc).__name__, "message": str(exc)},
     )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    """Maps decode/parse errors (bad hex, bad base64, bad datetime, bad pubkey format) to HTTP 400."""
+    return JSONResponse(
+        status_code=400,
+        content={"error": "ValidationError", "message": str(exc)},
+    )

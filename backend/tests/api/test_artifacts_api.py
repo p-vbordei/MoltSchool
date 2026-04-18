@@ -86,3 +86,34 @@ async def test_upload_artifact_flow(api_client):
     assert r.status_code == 200
     assert len(r.json()) == 1
     assert r.json()[0]["content_id"] == cid
+
+
+async def test_upload_artifact_bad_body_b64_is_400(api_client):
+    # Setup a kindred first (minimal fixture)
+    _, pk = generate_keypair()
+    await api_client.post(
+        "/v1/users",
+        json={"email": "a@x", "display_name": "A", "pubkey": pubkey_to_str(pk)},
+    )
+    await api_client.post(
+        "/v1/kindreds",
+        json={"slug": "k", "display_name": "K"},
+        headers={"x-owner-pubkey": pubkey_to_str(pk)},
+    )
+    r = await api_client.post(
+        "/v1/kindreds/k/artifacts",
+        json={
+            "metadata": {
+                "type": "routine",
+                "logical_name": "r",
+                "valid_from": "2026-04-18T00:00:00+00:00",
+                "valid_until": "2026-10-18T00:00:00+00:00",
+                "tags": [],
+                "body_sha256": "sha256:" + "0" * 64,
+            },
+            "body_b64": "not!base64!!!",
+            "author_pubkey": "ed25519:" + "0" * 64,
+            "author_sig": "deadbeef",
+        },
+    )
+    assert r.status_code == 400

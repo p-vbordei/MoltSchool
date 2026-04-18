@@ -72,3 +72,16 @@ async def test_join_via_invite(api_client):
     data = r.json()
     assert data["membership_id"]
     assert data["kindred_id"] == fx.kindred_id
+
+
+async def test_join_bad_accept_body_b64_is_400(api_client):
+    r = await api_client.post(
+        "/v1/join",
+        json={
+            "token": "x" * 32,
+            "agent_pubkey": "ed25519:" + "0" * 64,
+            "accept_sig": "deadbeef",
+            "accept_body_b64": "not!base64!!!",
+        },
+    )
+    assert r.status_code == 400

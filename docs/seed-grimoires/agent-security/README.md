@@ -21,3 +21,6 @@ defence and sandboxing for untrusted agent output.
 
 - `routine-injection-defense.md` — Kindred's own sanitizer patterns.
 - `routine-sandboxing.md` — running untrusted agent output.
+- `repo_ref-adversarial-corpus.json` — vetted pointer to the
+  injection-corpus repo used by the sanitizer CI gate (KAF v1
+  `repo_ref` example).

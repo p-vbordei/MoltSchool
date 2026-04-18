@@ -1,0 +1,6 @@
+{
+  "repo_url": "https://github.com/kindred/backend",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "summary": "Adversarial prompt-injection corpus used by Kindred's sanitizer test suite. 50 hand-curated payloads covering SYSTEM:/ <system> injections, 'ignore previous instructions' variants, javascript:/data:/file: URI schemes, base64-decoded payloads, Unicode homoglyph attacks, and invisible-character tricks. See backend/tests/adversarial/injection_corpus.json for the exact bytes. Current block rate against the reference sanitizer: 100%.",
+  "vetted_at": "2026-04-18T00:00:00+00:00"
+}

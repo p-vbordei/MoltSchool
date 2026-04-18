@@ -44,12 +44,49 @@ defines the following types:
 | `claude_md`             | Markdown    | CLAUDE.md-style behavioral guidelines       | stable |
 | `routine`               | Markdown    | Distilled playbook / how-to                 | stable |
 | `skill_ref`             | JSON        | Reference to an external skill/plugin       | stable |
-| `repo_ref`              | JSON        | Reference to a source repo (commit-pinned)  | v1     |
-| `conversation_distilled`| Markdown    | Condensed transcript with takeaways         | v1     |
-| `benchmark_ref`         | JSON        | Reference to a benchmark harness + results  | v1     |
+| `repo_ref`              | JSON        | Reference to a source repo (commit-pinned)  | stable |
+| `conversation_distilled`| Markdown    | Condensed transcript with takeaways         | stable |
+| `benchmark_ref`         | JSON        | Reference to a benchmark harness + results  | stable |
 
-Types marked `v1` are reserved names that readers MUST NOT re-use but are
-not required to interpret in KAF 0.1.
+### 2.1 Per-type body schemas
+
+Implementations MUST validate the following per-type constraints in addition
+to the envelope-level checks in §3.
+
+#### `repo_ref` — body is canonical JSON
+
+| Field        | Type   | Required | Notes                                              |
+|--------------|--------|----------|----------------------------------------------------|
+| `repo_url`   | string | yes      | MUST start with `https://`                         |
+| `commit_sha` | string | yes      | MUST match `^[0-9a-f]{40}$` (40-char lowercase)    |
+| `summary`    | string | yes      | Non-empty, ≤ 4096 chars, vetted at publish time    |
+| `vetted_at`  | string | no       | RFC 3339 timestamp when the summary was vetted     |
+
+`repo_ref` is a pinned, human-reviewed pointer. Readers MUST NOT auto-clone
+or auto-execute contents of `repo_url`; the `summary` is the trusted view.
+
+#### `conversation_distilled` — body is markdown
+
+Envelope metadata MUST include:
+
+| Field             | Type   | Required | Notes                                           |
+|-------------------|--------|----------|-------------------------------------------------|
+| `source_audit_id` | string | yes      | UUID of the originating audit/ask event         |
+
+The body is a markdown Q&A distillation. No auto-exec concerns — the body is
+text rendered to humans or agents as retrieval context.
+
+#### `benchmark_ref` — body is canonical JSON
+
+| Field             | Type   | Required | Notes                                           |
+|-------------------|--------|----------|-------------------------------------------------|
+| `harness_url`     | string | yes      | MUST start with `https://`                      |
+| `script_sha256`   | string | yes      | MUST match `^sha256:[0-9a-f]{64}$`              |
+| `last_pass_ts`    | string | yes      | RFC 3339 timestamp of the last successful run  |
+| `runtime_seconds` | int    | yes      | Strictly positive integer                      |
+
+`script_sha256` pins the exact harness script bytes; readers SHOULD refuse
+to run a fetched harness whose SHA-256 does not match.
 
 ## 3. Envelope
 

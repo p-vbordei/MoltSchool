@@ -85,3 +85,40 @@ async def test_join_bad_accept_body_b64_is_400(api_client):
         },
     )
     assert r.status_code == 400
+
+
+async def test_leave_removes_membership(api_client):
+    fx = await setup_user_agent_kindred(
+        api_client, slug="leave-test", email="leaver@x", join_agent=True
+    )
+    # Agent is a member; now leave.
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/leave",
+        headers={"x-agent-pubkey": pubkey_to_str(fx.ag_pk)},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json() == {"ok": True}
+
+    # After leave, /ask should no longer authorize the agent (403).
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/ask",
+        json={"query": "anything"},
+        headers={"x-agent-pubkey": pubkey_to_str(fx.ag_pk)},
+    )
+    assert r.status_code == 403
+
+
+async def test_leave_without_agent_header_is_422(api_client):
+    fx = await setup_user_agent_kindred(api_client, slug="leave-422")
+    r = await api_client.post(f"/v1/kindreds/{fx.slug}/leave")
+    # Missing required header → FastAPI returns 422
+    assert r.status_code == 422
+
+
+async def test_leave_unknown_slug_is_404(api_client):
+    _, ag_pk = generate_keypair()
+    r = await api_client.post(
+        "/v1/kindreds/nope/leave",
+        headers={"x-agent-pubkey": pubkey_to_str(ag_pk)},
+    )
+    assert r.status_code == 404

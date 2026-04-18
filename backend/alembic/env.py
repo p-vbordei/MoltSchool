@@ -7,6 +7,8 @@ from kindred.config import Settings
 from kindred.models import (  # noqa: F401 — register tables
     agent,
     artifact,
+    audit,
+    event,
     invite,
     kindred,
     membership,

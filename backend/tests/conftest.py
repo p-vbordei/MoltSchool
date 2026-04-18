@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from kindred.models import (  # noqa: F401 — register tables
     agent,
     artifact,
+    audit,
+    event,
     invite,
     kindred,
     membership,

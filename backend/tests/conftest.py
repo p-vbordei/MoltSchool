@@ -13,6 +13,7 @@ from kindred.models import (  # noqa: F401 — register tables
     user,
 )
 from kindred.models.base import Base
+from tests.helpers import make_user_agent_kindred_artifact
 
 
 @pytest_asyncio.fixture
@@ -29,3 +30,8 @@ async def db_session(db_engine) -> AsyncSession:
     factory = async_sessionmaker(db_engine, expire_on_commit=False, class_=AsyncSession)
     async with factory() as session:
         yield session
+
+
+@pytest_asyncio.fixture
+async def artifact_and_agent(db_session):
+    return await make_user_agent_kindred_artifact(db_session)

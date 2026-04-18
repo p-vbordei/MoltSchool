@@ -4,7 +4,14 @@ from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from kindred.config import Settings
-from kindred.models import agent, invite, kindred, membership, user  # noqa: F401 — register tables
+from kindred.models import (  # noqa: F401 — register tables
+    agent,
+    artifact,
+    invite,
+    kindred,
+    membership,
+    user,
+)
 from kindred.models.base import Base
 
 config = context.config

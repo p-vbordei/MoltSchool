@@ -1,9 +1,11 @@
 from uuid import UUID
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from kindred.models.artifact import Artifact, Blessing
+
 from kindred.crypto.keys import verify
-from kindred.errors import SignatureError, ConflictError
+from kindred.errors import ConflictError, SignatureError
+from kindred.models.artifact import Artifact, Blessing
 from kindred.services.audit import append_event
 
 

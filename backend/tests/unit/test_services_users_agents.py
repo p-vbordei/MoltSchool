@@ -1,10 +1,12 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, UTC
-from kindred.crypto.keys import generate_keypair, sign, pubkey_to_str
+
 from kindred.crypto.canonical import canonical_json
-from kindred.services.users import register_user, get_user_by_pubkey
+from kindred.crypto.keys import generate_keypair, pubkey_to_str, sign
+from kindred.errors import ConflictError, SignatureError
 from kindred.services.agents import register_agent
-from kindred.errors import SignatureError, ConflictError
+from kindred.services.users import get_user_by_pubkey, register_user
 
 
 async def test_register_user(db_session):
@@ -26,7 +28,7 @@ async def test_register_duplicate_email_raises(db_session):
 async def test_register_agent_valid_attestation(db_session):
     sk, pk = generate_keypair()
     u = await register_user(db_session, email="a@b.c", display_name="A", pubkey=pk)
-    agent_sk, agent_pk = generate_keypair()
+    _agent_sk, agent_pk = generate_keypair()
     expires = datetime.now(UTC) + timedelta(days=30)
     scope = {"kindreds": ["*"], "actions": ["read", "contribute"]}
     payload = canonical_json({

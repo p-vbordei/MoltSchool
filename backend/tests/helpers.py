@@ -1,12 +1,13 @@
-from datetime import datetime, timedelta, UTC
-from kindred.crypto.keys import generate_keypair, sign, pubkey_to_str
+from datetime import UTC, datetime, timedelta
+
 from kindred.crypto.canonical import canonical_json
 from kindred.crypto.content_id import compute_content_id
-from kindred.storage.object_store import InMemoryObjectStore
-from kindred.services.users import register_user
+from kindred.crypto.keys import generate_keypair, pubkey_to_str, sign
 from kindred.services.agents import register_agent
-from kindred.services.kindreds import create_kindred
 from kindred.services.artifacts import upload_artifact
+from kindred.services.kindreds import create_kindred
+from kindred.services.users import register_user
+from kindred.storage.object_store import InMemoryObjectStore
 
 
 async def make_user_agent_kindred_artifact(db_session, email="a@x", slug="x"):
@@ -15,7 +16,9 @@ async def make_user_agent_kindred_artifact(db_session, email="a@x", slug="x"):
     ag_sk, ag_pk = generate_keypair()
     expires = datetime.now(UTC) + timedelta(days=30)
     scope = {"kindreds": ["*"], "actions": ["contribute"]}
-    att = canonical_json({"agent_pubkey": pubkey_to_str(ag_pk), "scope": scope, "expires_at": expires.isoformat()})
+    att = canonical_json(
+        {"agent_pubkey": pubkey_to_str(ag_pk), "scope": scope, "expires_at": expires.isoformat()}
+    )
     att_sig = sign(sk, att)
     a = await register_agent(db_session, owner_id=u.id, agent_pubkey=ag_pk,
                              display_name="x", scope=scope, expires_at=expires, sig=att_sig)

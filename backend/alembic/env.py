@@ -1,7 +1,9 @@
 # alembic/env.py
 import asyncio
 from logging.config import fileConfig
+
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from alembic import context
 from kindred.config import Settings
 from kindred.models import (  # noqa: F401 — register tables

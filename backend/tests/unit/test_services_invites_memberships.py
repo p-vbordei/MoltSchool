@@ -1,5 +1,6 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, UTC
 
 from kindred.crypto.canonical import canonical_json
 from kindred.crypto.keys import generate_keypair, pubkey_to_str, sign
@@ -63,7 +64,7 @@ async def test_issue_and_redeem_invite(db_session):
     )
     assert inv.token == token
 
-    bob, _, bob_pk, bob_agent, bob_agent_sk, bob_agent_pk = (
+    _bob, _, _bob_pk, _bob_agent, bob_agent_sk, bob_agent_pk = (
         await _register_user_and_agent(db_session, "bob@x")
     )
     accept_body = canonical_json(
@@ -81,7 +82,7 @@ async def test_issue_and_redeem_invite(db_session):
 
 
 async def test_invite_bad_issuer_sig_raises(db_session):
-    alice, alice_sk, alice_pk, *_ = await _register_user_and_agent(
+    alice, _alice_sk, alice_pk, *_ = await _register_user_and_agent(
         db_session, "alice@x"
     )
     k = await create_kindred(
@@ -119,7 +120,7 @@ async def test_invite_expired_rejected(db_session):
         issuer_pubkey=alice_pk,
         inv_body=inv_body,
     )
-    _, _, _, _, bob_agent_sk, bob_agent_pk = await _register_user_and_agent(
+    _, _, _, _, _bob_agent_sk, bob_agent_pk = await _register_user_and_agent(
         db_session, "bob@x"
     )
     with pytest.raises(ValidationError):

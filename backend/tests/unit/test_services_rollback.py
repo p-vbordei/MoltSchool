@@ -1,4 +1,5 @@
 from sqlalchemy import select
+
 from kindred.models.artifact import Artifact
 from kindred.services.rollback import list_events, rollback_to
 from tests.helpers import make_user_agent_kindred_artifact

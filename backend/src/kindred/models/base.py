@@ -1,5 +1,6 @@
 # src/kindred/models/base.py
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from sqlalchemy import DateTime, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

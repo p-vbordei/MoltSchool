@@ -1,13 +1,15 @@
 from datetime import datetime
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from kindred.models.artifact import Artifact
-from kindred.storage.object_store import ObjectStore
-from kindred.crypto.keys import verify
+
 from kindred.crypto.content_id import compute_content_id
-from kindred.errors import SignatureError, ValidationError, NotFoundError
+from kindred.crypto.keys import verify
+from kindred.errors import NotFoundError, SignatureError, ValidationError
+from kindred.models.artifact import Artifact
 from kindred.services.audit import append_event
+from kindred.storage.object_store import ObjectStore
 
 ALLOWED_TYPES = {"claude_md", "routine", "skill_ref"}
 
@@ -24,7 +26,9 @@ async def upload_artifact(
     cid = compute_content_id(metadata)
     if not verify(author_pubkey, cid.encode(), author_sig):
         raise SignatureError("invalid author signature on content_id")
-    exists = (await session.execute(select(Artifact).where(Artifact.content_id == cid))).scalar_one_or_none()
+    exists = (
+        await session.execute(select(Artifact).where(Artifact.content_id == cid))
+    ).scalar_one_or_none()
     if exists:
         return exists
     await store.put(actual_body_cid, body)
@@ -44,7 +48,9 @@ async def upload_artifact(
 
 
 async def get_artifact(session: AsyncSession, content_id: str) -> Artifact:
-    a = (await session.execute(select(Artifact).where(Artifact.content_id == content_id))).scalar_one_or_none()
+    a = (
+        await session.execute(select(Artifact).where(Artifact.content_id == content_id))
+    ).scalar_one_or_none()
     if not a:
         raise NotFoundError(f"artifact {content_id}")
     return a

@@ -12,7 +12,7 @@ def test_canonical_no_whitespace():
 
 
 def test_canonical_utf8_no_ascii_escape():
-    assert "ă".encode("utf-8") in canonical_json({"name": "ănă"})
+    assert "ă".encode() in canonical_json({"name": "ănă"})
 
 
 def test_canonical_nested():

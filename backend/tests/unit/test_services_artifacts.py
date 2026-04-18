@@ -1,14 +1,16 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, UTC
-from kindred.crypto.keys import generate_keypair, sign, pubkey_to_str
+
 from kindred.crypto.canonical import canonical_json
 from kindred.crypto.content_id import compute_content_id
-from kindred.storage.object_store import InMemoryObjectStore
-from kindred.services.users import register_user
-from kindred.services.agents import register_agent
-from kindred.services.kindreds import create_kindred
-from kindred.services.artifacts import upload_artifact, get_artifact, list_artifacts
+from kindred.crypto.keys import generate_keypair, pubkey_to_str, sign
 from kindred.errors import SignatureError, ValidationError
+from kindred.services.agents import register_agent
+from kindred.services.artifacts import upload_artifact
+from kindred.services.kindreds import create_kindred
+from kindred.services.users import register_user
+from kindred.storage.object_store import InMemoryObjectStore
 
 
 async def _setup(db_session):
@@ -17,7 +19,9 @@ async def _setup(db_session):
     ag_sk, ag_pk = generate_keypair()
     expires = datetime.now(UTC) + timedelta(days=30)
     scope = {"kindreds": ["*"], "actions": ["contribute"]}
-    att = canonical_json({"agent_pubkey": pubkey_to_str(ag_pk), "scope": scope, "expires_at": expires.isoformat()})
+    att = canonical_json(
+        {"agent_pubkey": pubkey_to_str(ag_pk), "scope": scope, "expires_at": expires.isoformat()}
+    )
     att_sig = sign(sk, att)
     a = await register_agent(db_session, owner_id=u.id, agent_pubkey=ag_pk,
                              display_name="x", scope=scope, expires_at=expires, sig=att_sig)
@@ -26,7 +30,7 @@ async def _setup(db_session):
 
 
 async def test_upload_artifact(db_session):
-    u, a, ag_sk, ag_pk, k = await _setup(db_session)
+    _u, _a, ag_sk, ag_pk, k = await _setup(db_session)
     store = InMemoryObjectStore()
     content_body = b"# Handle Postgres Bloat\n1. ..."
     metadata = {
@@ -46,7 +50,7 @@ async def test_upload_artifact(db_session):
 
 
 async def test_upload_rejects_bad_sig(db_session):
-    u, a, ag_sk, ag_pk, k = await _setup(db_session)
+    _u, _a, _ag_sk, ag_pk, k = await _setup(db_session)
     store = InMemoryObjectStore()
     metadata = {
         "kaf_version": "0.1", "type": "routine", "logical_name": "x",
@@ -62,7 +66,7 @@ async def test_upload_rejects_bad_sig(db_session):
 
 
 async def test_upload_rejects_mismatched_body_hash(db_session):
-    u, a, ag_sk, ag_pk, k = await _setup(db_session)
+    _u, _a, ag_sk, ag_pk, k = await _setup(db_session)
     store = InMemoryObjectStore()
     metadata = {
         "kaf_version": "0.1", "type": "routine", "logical_name": "x",

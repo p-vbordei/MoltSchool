@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-class ObjectNotFound(Exception):
+class ObjectNotFoundError(Exception):
     pass
 
 
@@ -20,7 +20,7 @@ class InMemoryObjectStore:
 
     async def get(self, content_id: str) -> bytes:
         if content_id not in self._data:
-            raise ObjectNotFound(content_id)
+            raise ObjectNotFoundError(content_id)
         return self._data[content_id]
 
     async def exists(self, content_id: str) -> bool:
@@ -58,7 +58,7 @@ class MinioObjectStore:
                 resp.release_conn()
         except S3Error as e:
             if e.code == "NoSuchKey":
-                raise ObjectNotFound(content_id) from e
+                raise ObjectNotFoundError(content_id) from e
             raise
 
     async def exists(self, content_id: str) -> bool:

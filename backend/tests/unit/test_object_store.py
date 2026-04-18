@@ -1,6 +1,6 @@
 import pytest
 
-from kindred.storage.object_store import InMemoryObjectStore, ObjectNotFound
+from kindred.storage.object_store import InMemoryObjectStore, ObjectNotFoundError
 
 
 async def test_put_get_roundtrip():
@@ -11,7 +11,7 @@ async def test_put_get_roundtrip():
 
 async def test_get_missing_raises():
     store = InMemoryObjectStore()
-    with pytest.raises(ObjectNotFound):
+    with pytest.raises(ObjectNotFoundError):
         await store.get("sha256:missing")
 
 

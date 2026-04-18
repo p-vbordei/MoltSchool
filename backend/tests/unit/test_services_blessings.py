@@ -1,8 +1,9 @@
 import pytest
+
 from kindred.crypto.keys import sign
-from kindred.services.blessings import add_blessing, compute_tier
-from kindred.errors import SignatureError, ConflictError
+from kindred.errors import ConflictError, SignatureError
 from kindred.models.artifact import Blessing
+from kindred.services.blessings import add_blessing, compute_tier
 
 
 async def test_add_blessing_ok(db_session, artifact_and_agent):

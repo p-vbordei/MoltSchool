@@ -1,0 +1,33 @@
+{
+  "name": "@kindred/claude-code-plugin",
+  "version": "0.1.0",
+  "description": "Kindred — a knowledge co-op for your AI agent. Installs a retrieval skill, MCP server, and outcome hook.",
+  "license": "MIT",
+  "author": "Kindred",
+  "homepage": "https://kindred.sh",
+  "repository": "https://github.com/kindred/claude-code-plugin",
+  "commands": {},
+  "agents": {},
+  "skills": {
+    "kindred-retrieval": "./skills/kindred-retrieval.md"
+  },
+  "mcp_servers": {
+    "kindred": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}/mcp",
+        "python",
+        "-m",
+        "kindred_mcp.server"
+      ]
+    }
+  },
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "script": "${CLAUDE_PLUGIN_ROOT}/hooks/post_tool_use.sh"
+    }
+  ]
+}

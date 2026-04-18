@@ -1,0 +1,128 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #121212;
+  --muted: #555;
+  --border: #e5e5e5;
+  --accent: #7a4e2a;
+  --code-bg: #f5f2ee;
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14110d;
+    --fg: #ece6da;
+    --muted: #a99f8a;
+    --border: #2b2621;
+    --accent: #d8a16b;
+    --code-bg: #1d1915;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+}
+.site-header .container {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+}
+.brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  color: var(--fg);
+}
+nav a {
+  margin-left: 1rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+nav a:hover { color: var(--accent); }
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 4rem;
+}
+.site-footer .container {
+  padding: 1.5rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.prose h1, .prose h2, .prose h3 {
+  font-family: var(--serif);
+  line-height: 1.25;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+.prose h1 { font-size: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.prose h2 { font-size: 1.4rem; }
+.prose h3 { font-size: 1.15rem; }
+
+.prose a { color: var(--accent); }
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.88em;
+  line-height: 1.5;
+}
+.prose pre code {
+  background: transparent;
+  padding: 0;
+}
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  font-size: 0.95em;
+}
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  color: var(--muted);
+  font-style: italic;
+}
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from kindred.crypto.content_id import compute_content_id
 from kindred.crypto.keys import verify
+from kindred.embeddings.provider import EmbeddingProvider
 from kindred.errors import NotFoundError, SignatureError, ValidationError
 from kindred.models.artifact import Artifact
 from kindred.services.audit import append_event
@@ -17,6 +18,7 @@ ALLOWED_TYPES = {"claude_md", "routine", "skill_ref"}
 async def upload_artifact(
     session: AsyncSession, *, store: ObjectStore, kindred_id: UUID,
     metadata: dict, body: bytes, author_pubkey: bytes, author_sig: bytes,
+    embedding_provider: EmbeddingProvider | None = None,
 ) -> Artifact:
     if metadata.get("type") not in ALLOWED_TYPES:
         raise ValidationError(f"unsupported type: {metadata.get('type')}")
@@ -32,6 +34,15 @@ async def upload_artifact(
     if exists:
         return exists
     await store.put(actual_body_cid, body)
+    embedding: list[float] | None = None
+    if embedding_provider is not None:
+        # Truncate body to 1024 bytes for the embed text — keeps OpenAI input small
+        # and stays well under 8k token context. Decoded leniently to avoid failing
+        # on non-utf8 body bytes.
+        tag_str = " ".join(metadata.get("tags", []))
+        body_str = body[:1024].decode("utf-8", errors="replace")
+        embed_text = f"{metadata['logical_name']}\n{tag_str}\n{body_str}"
+        embedding = await embedding_provider.embed(embed_text)
     art = Artifact(
         content_id=cid, kindred_id=kindred_id, type=metadata["type"],
         logical_name=metadata["logical_name"], author_pubkey=author_pubkey,
@@ -39,6 +50,7 @@ async def upload_artifact(
         valid_from=datetime.fromisoformat(metadata["valid_from"]),
         valid_until=datetime.fromisoformat(metadata["valid_until"]),
         tags=metadata.get("tags", []),
+        embedding=embedding,
     )
     session.add(art)
     await session.flush()

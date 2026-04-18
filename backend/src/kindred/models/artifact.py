@@ -34,6 +34,7 @@ class Artifact(Base, TimestampMixin):
     superseded_by: Mapped[UUID | None] = mapped_column(
         ForeignKey("artifacts.id"), nullable=True
     )
+    embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
 
 
 class Blessing(Base, TimestampMixin):

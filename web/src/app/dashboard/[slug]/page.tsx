@@ -15,6 +15,11 @@ export default async function KindredView({ params }: Props) {
   if (!session) redirect("/login");
 
   const { slug } = await params;
+  const userId =
+    (session as { userId?: string }).userId ??
+    session.user?.email ??
+    session.user?.name ??
+    "";
 
   let kindred: Awaited<ReturnType<typeof backend.kindreds.get>> | null = null;
   let artifacts: Artifact[] = [];
@@ -71,6 +76,7 @@ export default async function KindredView({ params }: Props) {
               key={a.content_id}
               artifact={a}
               kindredSlug={slug}
+              userId={userId}
             />
           ))
         )}

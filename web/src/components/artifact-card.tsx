@@ -6,6 +6,8 @@ import { BlessButton } from "@/components/bless-button";
 type Props = {
   artifact: Artifact;
   kindredSlug: string;
+  /** Stable user id used to scope the IDB agent keypair lookup in BlessButton. */
+  userId?: string;
 };
 
 const TYPE_ICON: Record<string, string> = {
@@ -72,6 +74,7 @@ export function ArtifactCard(props: Props) {
             kindredSlug={props.kindredSlug}
             contentId={artifact.content_id}
             alreadyBlessed={false}
+            userId={props.userId}
           />
           <div className="font-mono text-[10px] text-muted-foreground">
             cid {artifact.content_id.slice(0, 12)}…

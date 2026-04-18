@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { backend, BackendError } from "@/lib/backend";
 import { KindredList } from "@/components/kindred-list";
+import { BootstrapKeys } from "@/components/bootstrap-keys";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +30,21 @@ export default async function Dashboard() {
 
   const userName =
     session.user?.name ?? session.user?.email ?? "friend";
+  const userId =
+    (session as { userId?: string }).userId ??
+    session.user?.email ??
+    session.user?.name ??
+    "";
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-12">
+      {userId && (
+        <BootstrapKeys
+          userId={userId}
+          email={session.user?.email}
+          displayName={session.user?.name}
+        />
+      )}
       <header className="flex items-center justify-between">
         <Link href="/" className="font-serif text-xl tracking-tight">
           Kindred

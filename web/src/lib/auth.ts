@@ -2,14 +2,13 @@
  * Auth.js (NextAuth v5) configuration.
  *
  * v0 scope: GitHub OAuth only, fully wired. Google + Passkey (WebAuthn) are
- * scaffolded as TODOs and not enabled — they require additional provider
- * setup (Google Cloud project, WebAuthn challenge/response storage) that we
- * defer to Plan 07.
+ * scaffolded as TODOs and not enabled.
  *
- * Keystore tradeoff (documented in README): on first GitHub login we
- * generate owner + agent keypairs server-side, encrypt with NEXTAUTH_SECRET,
- * and stash them in the JWT. This sacrifices self-custody for a single-
- * click onboarding. Plan 07 migrates to client-side WebCrypto.
+ * Self-custody: we no longer mint server-side keypairs. Post-login, a client
+ * component (`BootstrapKeys`, mounted in the dashboard) generates Ed25519
+ * keypairs in the browser and persists them to IndexedDB. The private key
+ * never leaves the browser. The session carries a stable `userId` only so
+ * client components can namespace their IDB reads.
  */
 
 import NextAuth from "next-auth";
@@ -46,26 +45,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
-      // On first login: mint owner + agent pubkeys (stub for v0 — real impl
-      // generates Ed25519 via WebCrypto on server and encrypts private halves
-      // with NEXTAUTH_SECRET before storing). For now we derive deterministic
-      // placeholders from the OAuth subject so the proxy has something to
-      // forward. Plan 07 replaces with real keygen.
+      // Derive a stable user id from the OAuth subject. Used client-side to
+      // namespace IndexedDB keypairs (`owner-<userId>`, `agent-<userId>`).
+      // No secrets or pubkeys are stashed here — the browser holds those.
       if (account && profile) {
         const sub = String(profile.id ?? profile.sub ?? profile.email ?? "");
-        token.ownerPubkey = `pk_owner_${sub}`;
-        token.agentPubkey = `pk_agent_${sub}`;
+        if (sub) token.userId = sub;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token.ownerPubkey) {
-        (session as { ownerPubkey?: string }).ownerPubkey =
-          token.ownerPubkey as string;
-      }
-      if (token.agentPubkey) {
-        (session as { agentPubkey?: string }).agentPubkey =
-          token.agentPubkey as string;
+      if (token.userId) {
+        (session as { userId?: string }).userId = token.userId as string;
+        if (session.user) {
+          (session.user as { id?: string }).id = token.userId as string;
+        }
       }
       return session;
     },

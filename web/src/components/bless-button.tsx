@@ -2,14 +2,27 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { hex, pubkeyToStr, sign } from "@/lib/crypto/keys";
+import { loadKeypair } from "@/lib/crypto/keystore";
 
 type Props = {
   kindredSlug: string;
   contentId: string;
   alreadyBlessed?: boolean;
+  /**
+   * Stable user identifier used to namespace the IndexedDB agent keypair.
+   * Passed down from the RSC dashboard so the client component doesn't need
+   * a SessionProvider. If undefined, the button surfaces a load error.
+   */
+  userId?: string;
 };
 
-export function BlessButton({ kindredSlug, contentId, alreadyBlessed }: Props) {
+export function BlessButton({
+  kindredSlug,
+  contentId,
+  alreadyBlessed,
+  userId,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -19,15 +32,29 @@ export function BlessButton({ kindredSlug, contentId, alreadyBlessed }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        // v0: server-side signing — backend signs on the agent's behalf
-        // using the session-bound keystore. Plan 07 adds client-side WebCrypto
-        // signing so the private key never leaves the browser.
+        if (!userId) throw new Error("no session — please sign in again");
+        const agent = await loadKeypair(`agent-${userId}`);
+        if (!agent) {
+          throw new Error(
+            "agent key not found — refresh the page to re-bootstrap"
+          );
+        }
+
+        // Canonical payload for the bless signature: raw UTF-8 bytes of the
+        // content_id string. Matches backend `add_blessing` which calls
+        // `verify(signer_pubkey, content_id.encode(), sig)`.
+        const message = new TextEncoder().encode(contentId);
+        const sig = await sign(agent.sk, message);
+
         const resp = await fetch(
           `/api/backend/kindreds/${kindredSlug}/artifacts/${contentId}/bless`,
           {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ sig: "server-side-v0" }),
+            body: JSON.stringify({
+              signer_pubkey: pubkeyToStr(agent.pk),
+              sig: hex(sig),
+            }),
           }
         );
         if (!resp.ok) {

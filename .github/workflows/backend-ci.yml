@@ -44,6 +44,16 @@ jobs:
           KINDRED_OBJECT_STORE_BUCKET: x
           KINDRED_FACILITATOR_SIGNING_KEY_HEX: "00000000000000000000000000000000000000000000000000000000000000aa"
         run: uv run pytest -v --cov=kindred --cov-report=term-missing
+      - name: Adversarial injection suite (100% block gate)
+        working-directory: backend
+        env:
+          KINDRED_DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          KINDRED_OBJECT_STORE_ENDPOINT: "http://localhost:0"
+          KINDRED_OBJECT_STORE_ACCESS_KEY: x
+          KINDRED_OBJECT_STORE_SECRET_KEY: x
+          KINDRED_OBJECT_STORE_BUCKET: x
+          KINDRED_FACILITATOR_SIGNING_KEY_HEX: "00000000000000000000000000000000000000000000000000000000000000aa"
+        run: uv run pytest tests/adversarial/ -v
       - name: Migration check
         working-directory: backend
         env:

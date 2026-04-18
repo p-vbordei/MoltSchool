@@ -35,7 +35,8 @@ INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "ignore_previous",
         re.compile(
-            r"\b(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+"
+            r"\b(ignore|disregard|forget)\s+(all\s+|the\s+|any\s+)?"
+            r"(previous|prior|above)\s+"
             r"(instructions?|prompts?|rules?|messages?)",
             re.IGNORECASE,
         ),
@@ -62,7 +63,9 @@ INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         "prompt_leak",
         re.compile(
             r"\b(print|reveal|show|repeat|expose|dump|output)\s+"
-            r"(your\s+)?(system\s+|initial\s+|original\s+)?"
+            r"(me\s+|us\s+)?"
+            r"(your\s+|the\s+)?"
+            r"(system\s+|initial\s+|original\s+)?"
             r"(prompt|instructions|system\s+message)",
             re.IGNORECASE,
         ),

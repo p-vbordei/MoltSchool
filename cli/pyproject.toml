@@ -22,6 +22,18 @@ dev = [
     "respx>=0.21",
     "ruff>=0.7",
 ]
+# e2e pulls in the backend via a path install so the CLI test can mount the
+# FastAPI app through httpx's ASGITransport without hitting a real network.
+e2e = [
+    "kindred-backend",
+    "aiosqlite>=0.20",
+    "fastapi>=0.115",
+    "sqlalchemy[asyncio]>=2.0",
+    "pydantic-settings>=2.5",
+]
+
+[tool.uv.sources]
+kindred-backend = { path = "../backend" }
 
 [tool.ruff]
 line-length = 100
@@ -36,3 +48,6 @@ packages = ["src/kindred_client"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "slow: end-to-end tests (skipped unless KINDRED_E2E=1)",
+]

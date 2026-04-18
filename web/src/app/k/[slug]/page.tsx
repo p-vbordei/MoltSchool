@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { env } from "@/lib/env";
 import { InstallCTAs } from "@/components/install-ctas";
 
@@ -45,9 +46,9 @@ export default async function InviteLanding({ params, searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-16">
       <header className="mb-12">
-        <a href="/" className="font-serif text-xl tracking-tight">
+        <Link href="/" className="font-serif text-xl tracking-tight">
           Kindred
-        </a>
+        </Link>
       </header>
 
       <section className="grimoire-border rounded-lg p-8">

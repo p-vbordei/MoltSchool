@@ -2,7 +2,7 @@
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from kindred.models import agent, user  # noqa: F401 — register tables
+from kindred.models import agent, invite, kindred, membership, user  # noqa: F401 — register tables
 from kindred.models.base import Base
 
 

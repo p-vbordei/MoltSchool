@@ -34,7 +34,10 @@ def get_object_store() -> ObjectStore:
     global _store
     if _store is None:
         s = get_settings()
-        if s.env == "dev" and s.object_store_endpoint.endswith(":0"):
+        # In-memory store: dev default OR explicit opt-in via endpoint=memory /
+        # endpoint ending with ':0' (e.g. http://localhost:0). Persists only
+        # within the process — use only until S3/R2 wiring lands.
+        if s.object_store_endpoint in {"memory", ""} or s.object_store_endpoint.endswith(":0"):
             _store = InMemoryObjectStore()
         else:
             _store = MinioObjectStore(

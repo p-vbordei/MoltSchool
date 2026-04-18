@@ -1,4 +1,4 @@
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +6,17 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="KINDRED_", env_file=".env")
 
     database_url: str
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def _ensure_asyncpg_driver(cls, v: str) -> str:
+        # Railway / Heroku / etc. export the sync scheme; SQLAlchemy async needs +asyncpg.
+        if v.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + v[len("postgresql://"):]
+        if v.startswith("postgres://"):
+            return "postgresql+asyncpg://" + v[len("postgres://"):]
+        return v
+
     object_store_endpoint: str
     object_store_access_key: str
     object_store_secret_key: SecretStr

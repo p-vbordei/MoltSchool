@@ -4,10 +4,8 @@ from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from kindred.config import Settings
+from kindred.models import agent, user  # noqa: F401 — register tables
 from kindred.models.base import Base
-
-# Import model modules here as they are added (Tasks 8-11).
-# For Task 3, only Base is needed.
 
 config = context.config
 if config.config_file_name:

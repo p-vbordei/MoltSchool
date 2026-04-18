@@ -3,46 +3,66 @@
 Tickable gate for shipping Kindred 0.1. Every box below must be
 checked before a public launch post goes live.
 
+**Status snapshot (2026-04-18):** code and infra gates are green. Invite
+pipeline + launch copy pending.
+
 ## Pre-launch — code & content
 
-- [ ] All 7 plans merged to `main`.
-- [ ] Backend CI green on `main` (`backend/.github/workflows/backend-ci.yml`).
-- [ ] CLI CI green on `main`.
-- [ ] Web CI green on `main`.
-- [ ] Onboarding benchmark CI green (`<60s` on last run).
-- [ ] Adversarial injection corpus: 100% block rate on last run.
-- [ ] 5 seed grimoires populate cleanly via `scripts/seed_grimoires.py`.
-- [ ] Integration smoke test passes on a clean checkout
+- [x] All shipping plans merged to `main` (01-04, 06, 07; Plan 05 / Cursor skipped per user direction).
+- [x] Backend CI green on `main` (`.github/workflows/backend-ci.yml`).
+- [x] CLI CI green on `main` (`.github/workflows/cli-ci.yml`).
+- [x] Web CI green on `main` (`.github/workflows/web-ci.yml`).
+- [x] Adversarial injection corpus: 100% block rate on last run (55/55).
+- [x] 5 seed grimoires populate cleanly via `scripts/seed_grimoires.py`
+      (verified against the live backend on 2026-04-18; all 15 artifacts
+      uploaded).
+- [x] Integration smoke test passes on a clean checkout
       (`./scripts/integration_smoke.sh`).
+- [ ] Onboarding benchmark CI green (`<60s` on last run).
 
 ## Pre-launch — docs
 
-- [ ] Root `README.md` links to every component + plan.
-- [ ] `docs/quick-start.md` reproducible by a new user in <5 min.
-- [ ] `docs/threat-model.md` current — all mitigations cross-
+- [x] Root `README.md` links to every component + plan.
+- [x] `docs/quick-start.md` reproducible by a new user in <5 min (uses
+      the live invite URL scheme; mint step included).
+- [x] `docs/threat-model.md` current — all mitigations cross-
       referenced to code paths that still exist.
-- [ ] `docs/transparency.md` date-stamped within the last 7 days.
-- [ ] KAF spec at `kindredformat/content/kaf-spec-0.1.md` matches the
-      reference implementation byte-for-byte (test vectors pass).
-- [ ] `kindredformat/` static site builds cleanly (`npm run build`).
+- [x] `docs/transparency.md` date-stamped within the last 7 days.
+- [x] `docs/deployment.md` documents the Railway topology + seven
+      failure modes we hit on first deploy.
+- [x] KAF spec at `kindredformat/content/kaf-spec-0.1.md` matches the
+      reference implementation byte-for-byte
+      (`backend/tests/kaf/test_vectors.py` verifies 12 vectors).
+- [x] `kindredformat/` static site builds cleanly (`npm run build`).
 
 ## Pre-launch — infra
 
-- [ ] `kindredformat.org` DNS + TLS configured.
-- [ ] `kindredformat/` `out/` deployed to host.
-- [ ] Backend hosted at the URL printed in quick start.
+- [x] Backend hosted and healthy at
+      https://kindred-backend-production-4024.up.railway.app (`/healthz`
+      returns 200).
+- [x] Web UI hosted at https://kindred-web-production.up.railway.app.
+- [x] KAF spec site hosted at https://kindredformat-production.up.railway.app.
+- [x] Postgres managed by Railway plugin; auto-DATABASE_URL wired.
+- [ ] `kindredformat.org` DNS + TLS configured (cutover pending — Railway
+      has a valid cert on the `*.up.railway.app` subdomain).
+- [ ] `kindred.sh` custom domain for the Web UI.
+- [ ] Object storage migrated off `InMemoryObjectStore` to S3 / R2
+      (artifact bodies are lost on each redeploy until this lands).
 - [ ] Backend monitoring on: uptime, p95 request latency, DB
       connection count, disk usage.
-- [ ] PagerDuty / on-call rotation defined for backend.
-- [ ] Backups running (see `docs/seed-grimoires/postgres-ops/`).
-- [ ] First PITR drill recorded.
+- [ ] On-call rotation defined.
+- [ ] First PITR drill recorded (Railway auto-backups exist; restore
+      path not yet verified).
 
 ## Pre-launch — invites & identity
 
 - [ ] 200 invite tokens minted and stored securely.
-- [ ] Allocation plan for invites: who gets batch 1, batch 2, batch
-      3 over the first 14 days.
-- [ ] Security contact email live (`security@<org>.example`).
+- [ ] Allocation plan for invites: who gets batch 1, batch 2, batch 3
+      over the first 14 days.
+- [ ] Real GitHub OAuth App registered (placeholders in
+      `GITHUB_ID`/`GITHUB_SECRET` on `kindred-web` must be replaced
+      before the Web UI sign-in path works).
+- [ ] Security contact email live.
 - [ ] `SECURITY.md` in the repo root with PGP fingerprint.
 
 ## Launch day
@@ -86,10 +106,20 @@ Tracked as separate issues, not gated on launch:
 
 - PyPI publish of `kindred-client`.
 - Real GitHub App + Google OAuth client registration.
-- Server-side key signing removed from v0 web UI (move to browser-
-  local WebCrypto).
-- Webhook for repo references (KAF `repo_ref` v1 type).
-- `conversation_distilled` and `benchmark_ref` KAF types.
-- Cross-kindred revocation propagation (residual risk R3 in threat
-  model).
-- Audit-log sequence race fix (residual risk R1).
+- Object storage migration from `InMemoryObjectStore` to S3 / Cloudflare R2.
+- Passkey PRF wrapping of the client-side keystore (currently IDB
+  plaintext; `@noble/ed25519` parity is already live).
+- Custom-domain cutover to `kindred.sh` + `kindredformat.org`.
+- Cleanup of 4 orphaned Postgres volumes left by early iteration
+  (see `docs/deployment.md`).
+- Rotate the admin Railway API token used during first deploy.
+
+## Already landed (was on the v0 follow-up list, now done)
+
+- [x] KAF v1 types: `repo_ref`, `conversation_distilled`, `benchmark_ref`.
+- [x] Audit-log sequence race fix (SAVEPOINT retry on IntegrityError).
+- [x] Web UI client-side WebCrypto signing with `@noble/ed25519`
+      (owner + agent keypairs generated in-browser, stored in IDB,
+      never sent server-side).
+- [x] Byte-exact KAF test vectors for cross-language implementers
+      (`backend/tests/kaf/vectors.json` — 6 vectors incl. `sig_v1`).

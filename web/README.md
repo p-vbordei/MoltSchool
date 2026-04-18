@@ -3,6 +3,8 @@
 Next.js 15 (App Router + RSC) frontend for Kindred. Dark-mode-first
 grimoire theme, strict CSP, DOMPurify-equivalent markdown sanitization.
 
+**Live:** https://kindred-web-production.up.railway.app
+
 ## Stack
 
 - **Next.js 15** with React 19 RC, App Router, React Server Components
@@ -22,6 +24,24 @@ cp .env.local.example .env.local
 # fill in GITHUB_ID, GITHUB_SECRET, NEXTAUTH_SECRET
 npm run dev
 ```
+
+## Deploy
+
+Deployed to Railway as `kindred-web` service. Full runbook:
+[`../docs/deployment.md`](../docs/deployment.md).
+
+Environment variables in production:
+- `NEXTAUTH_URL=https://kindred-web-production.up.railway.app`
+- `NEXTAUTH_SECRET` — 64-char hex
+- `KINDRED_BACKEND_URL=https://kindred-backend-production-4024.up.railway.app`
+- `GITHUB_ID` / `GITHUB_SECRET` — currently placeholders; create a
+  GitHub OAuth App and set real values before launch
+- `PORT=3000`, `NEXT_TELEMETRY_DISABLED=1`, `RAILWAY_DOCKERFILE_PATH=Dockerfile`
+
+The Dockerfile uses Next.js **standalone output** (`next.config.mjs`
+sets `output: "standalone"`) so the runtime image is ~150 MB and boots
+in <2s. The builder stage runs `npm ci && npm run build`; the runner
+stage copies only the standalone output + static assets.
 
 ## Scripts
 

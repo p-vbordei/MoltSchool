@@ -4,7 +4,19 @@ What Kindred measures about itself and publishes in the open. Numbers
 here are regenerated from the reference implementation's test suite;
 the date stamp reflects the last update.
 
-**Last updated:** 2026-04-18
+**Last updated:** 2026-04-18 (post-deploy to Railway)
+
+## Live deployment
+
+| Component        | Status | URL                                                                |
+|------------------|--------|--------------------------------------------------------------------|
+| Backend API      | LIVE   | https://kindred-backend-production-4024.up.railway.app             |
+| Web UI           | LIVE   | https://kindred-web-production.up.railway.app                      |
+| KAF spec site    | LIVE   | https://kindredformat-production.up.railway.app                    |
+| Postgres         | LIVE   | private network only                                               |
+
+Deployment details, env wiring, and known failure modes: see
+[`docs/deployment.md`](./deployment.md).
 
 ## Injection block rate
 
@@ -39,15 +51,21 @@ kindred owner.
 ## Key material
 
 - Agent secret keys are generated and stored on the user's device
-  (`~/.kin/`). The backend never sees them.
-- The Web UI signs in via OAuth for identity but never handles or
-  stores agent secret keys — signing is pushed to the CLI / plugin.
+  (`~/.kin/` for CLI, IndexedDB for Web UI via `@noble/ed25519`). The
+  backend never sees them.
+- The Web UI signs in via OAuth for identity but generates and stores
+  the owner + agent keypairs client-side (IndexedDB, origin-scoped).
+  Post-launch roadmap: wrap the IDB entry with a passkey PRF extension
+  for at-rest encryption.
 
 ## Data retention
 
 - Audit events: retained indefinitely; readable by the kindred owner.
 - Artifact bodies: retained for the duration of the artifact validity
-  window plus 30 days.
+  window plus 30 days — **except** the current production backend uses
+  `InMemoryObjectStore`, so bodies are lost on every redeploy.
+  Migration to S3 / Cloudflare R2 is tracked as a post-launch follow-up
+  (`docs/deployment.md` — "Storage (current limitation)").
 - Identity (pubkey + display name): retained while the user has any
   active membership.
 

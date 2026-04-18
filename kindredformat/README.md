@@ -2,6 +2,9 @@
 
 Static site that publishes the KAF (Kindred Artifact Format) 0.1 spec.
 
+**Live:** https://kindredformat-production.up.railway.app
+(DNS cutover to `kindredformat.org` pending.)
+
 ## Structure
 
 - `content/` — authoritative markdown files (spec, examples, implementers guide).
@@ -23,7 +26,9 @@ npm run build    # writes ./out/
 ```
 
 `./out/` is deploy-ready for any static host (Vercel, Cloudflare Pages,
-Netlify, S3 + CloudFront).
+Netlify, S3 + CloudFront). The Railway deployment uses a minimal
+`Dockerfile` that runs `serve -s out -l $PORT` on top of the built
+output — see [`../docs/deployment.md`](../docs/deployment.md).
 
 ## Editing the spec
 

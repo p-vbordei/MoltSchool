@@ -1,0 +1,72 @@
+{
+  "version": "0.1",
+  "vectors": [
+    {
+      "id": "v1",
+      "description": "empty dict -> canonical {}",
+      "input_type": "dict",
+      "input": {},
+      "expected_canonical_json_hex": "7b7d",
+      "expected_canonical_json_utf8": "{}",
+      "expected_content_id": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "v2",
+      "description": "two keys, already sorted",
+      "input_type": "dict",
+      "input": {
+        "a": 1,
+        "b": 2
+      },
+      "expected_canonical_json_hex": "7b2261223a312c2262223a327d",
+      "expected_canonical_json_utf8": "{\"a\":1,\"b\":2}",
+      "expected_content_id": "sha256:43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "v3",
+      "description": "same keys, unsorted input",
+      "input_type": "dict",
+      "input": {
+        "b": 2,
+        "a": 1
+      },
+      "expected_canonical_json_hex": "7b2261223a312c2262223a327d",
+      "expected_canonical_json_utf8": "{\"a\":1,\"b\":2}",
+      "expected_content_id": "sha256:43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "v4",
+      "description": "nested dict with array and sub-dict",
+      "input_type": "dict",
+      "input": {
+        "x": [
+          3,
+          1,
+          2
+        ],
+        "y": {
+          "b": 1,
+          "a": 2
+        }
+      },
+      "expected_canonical_json_hex": "7b2278223a5b332c312c325d2c2279223a7b2261223a322c2262223a317d7d",
+      "expected_canonical_json_utf8": "{\"x\":[3,1,2],\"y\":{\"a\":2,\"b\":1}}",
+      "expected_content_id": "sha256:45ac223e0380e306b0cdda0fe1ddb6770ce35be66fd793f11fecc66a5b26f23e"
+    },
+    {
+      "id": "v5",
+      "description": "content_id over b'hello world'",
+      "input_type": "bytes",
+      "input": "hex:68656c6c6f20776f726c64",
+      "expected_content_id": "sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+    },
+    {
+      "id": "sig_v1",
+      "description": "ed25519 sign of v5 content_id with sk=00*32",
+      "secret_key_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "public_key_hex": "3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+      "content_id": "sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+      "expected_signature_hex": "5d430c81d084a05f510a25a203fa645257c1b29070a05dc348e0298e0f8eac3260050907fb30a9f505dd3afe0b6237601bde9d020c06320ede3c1fcb6bddc902"
+    }
+  ]
+}

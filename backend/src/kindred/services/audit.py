@@ -10,6 +10,11 @@ from kindred.models.event import Event
 
 
 async def _next_seq(session: AsyncSession, kindred_id: UUID, table) -> int:
+    # NOTE: `SELECT max(seq)+1` is inherently racy under concurrent writers.
+    # The (kindred_id, seq) UNIQUE constraint on AuditLog/Event makes collisions
+    # fail LOUDLY with IntegrityError on flush rather than silently corrupt.
+    # TODO: add bounded retry-on-IntegrityError in append_audit/append_event for
+    # production-quality behavior under contention.
     q = select(func.coalesce(func.max(table.seq), 0) + 1).where(
         table.kindred_id == kindred_id
     )

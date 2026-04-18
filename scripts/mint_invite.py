@@ -54,7 +54,7 @@ async def main(slug: str, backend_url: str) -> None:
         expires_in_days=1,
         max_uses=1,
     )
-    url = invite.get("url") or f"{backend_url}/v1/invites/{invite.get('token', token)}"
+    url = f"{backend_url}/k/{slug}?inv={invite.get('token', token)}"
     print(url)
 
 

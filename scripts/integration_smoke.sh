@@ -55,8 +55,15 @@ for i in {1..30}; do
     sleep 1
 done
 
-# 2. backend deps + migrations
-log "uv sync + alembic upgrade head"
+# 2. backend env + deps + migrations
+log "env + uv sync + alembic upgrade head"
+export KINDRED_DATABASE_URL="postgresql+asyncpg://kindred:kindred@localhost:5432/kindred"
+export KINDRED_OBJECT_STORE_ENDPOINT="http://localhost:9000"
+export KINDRED_OBJECT_STORE_ACCESS_KEY="minioadmin"
+export KINDRED_OBJECT_STORE_SECRET_KEY="minioadmin"
+export KINDRED_OBJECT_STORE_BUCKET="kindred-artifacts"
+export KINDRED_FACILITATOR_SIGNING_KEY_HEX="$(python3 -c 'import secrets;print(secrets.token_hex(32))')"
+export KINDRED_ENV="dev"
 ( cd "$REPO/backend" && uv sync )
 ( cd "$REPO/backend" && uv run alembic upgrade head )
 
@@ -64,30 +71,31 @@ log "uv sync + alembic upgrade head"
 log "starting backend"
 (
     cd "$REPO/backend"
-    nohup uv run uvicorn kindred.api.app:app --host 127.0.0.1 --port 8000 \
+    nohup uv run uvicorn kindred.api.main:app --host 127.0.0.1 --port 8000 \
         > "$SCRATCH/backend.log" 2>&1 &
     echo $! > "$SCRATCH/backend.pid"
 )
 BACKEND_PID="$(cat "$SCRATCH/backend.pid")"
 
 for i in {1..30}; do
-    if curl -sf "$BACKEND_URL/v1/healthz" >/dev/null 2>&1; then
+    if curl -sf "$BACKEND_URL/healthz" >/dev/null 2>&1; then
         echo "  backend ready (pid $BACKEND_PID)"
         break
     fi
     sleep 1
 done
-curl -sf "$BACKEND_URL/v1/healthz" >/dev/null || {
+curl -sf "$BACKEND_URL/healthz" >/dev/null || {
     echo "backend never became healthy; see $SCRATCH/backend.log"
     tail -n 50 "$SCRATCH/backend.log" || true
     exit 1
 }
 
-# 4. seed grimoires
+# 4. seed grimoires (needs kindred_client — use cli venv via uv)
 log "seeding grimoires"
 export KINDRED_BACKEND_URL="$BACKEND_URL"
 export KINDRED_SEED_KEYFILE="$SCRATCH/seed.key"
-python3 "$REPO/scripts/seed_grimoires.py"
+( cd "$REPO/cli" && uv sync >/dev/null 2>&1 )
+( cd "$REPO/cli" && uv run python "$REPO/scripts/seed_grimoires.py" )
 
 # Verify the 5 kindreds exist
 for slug in claude-code-patterns postgres-ops llm-eval-playbook agent-security kindred-patterns; do
@@ -101,7 +109,7 @@ done
 
 # 5. mint invite
 log "minting invite"
-INVITE_URL="$(python3 "$REPO/scripts/mint_invite.py" --slug claude-code-patterns)"
+INVITE_URL="$(cd "$REPO/cli" && uv run python "$REPO/scripts/mint_invite.py" --slug claude-code-patterns)"
 echo "  invite: $INVITE_URL"
 
 # 6. CLI flow in a scratch venv

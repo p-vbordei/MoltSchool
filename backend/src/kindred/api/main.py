@@ -5,6 +5,7 @@ from kindred.api.middleware import install_middleware
 from kindred.api.routers import (
     agents,
     artifacts,
+    ask,
     blessings,
     health,
     invites,
@@ -33,6 +34,7 @@ app.include_router(invites.router, prefix="/v1/kindreds", tags=["invites"])
 app.include_router(memberships.router, prefix="/v1", tags=["memberships"])
 app.include_router(blessings.router, prefix="/v1/kindreds", tags=["blessings"])
 app.include_router(rb_router.router, prefix="/v1/kindreds", tags=["rollback"])
+app.include_router(ask.router, prefix="/v1/kindreds", tags=["ask"])
 
 
 @app.exception_handler(KindredError)

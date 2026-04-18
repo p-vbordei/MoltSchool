@@ -3,9 +3,10 @@ import base64
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from kindred.api.deps import db_session, get_object_store
+from kindred.api.deps import db_session, get_embedding_provider, get_object_store
 from kindred.api.schemas.artifacts import ArtifactOut, UploadArtifactReq
 from kindred.crypto.keys import str_to_pubkey
+from kindred.embeddings.provider import EmbeddingProvider
 from kindred.services.artifacts import list_artifacts, upload_artifact
 from kindred.services.blessings import compute_tier
 from kindred.services.kindreds import get_kindred_by_slug
@@ -20,6 +21,7 @@ async def upload(
     req: UploadArtifactReq,
     session: AsyncSession = Depends(db_session),
     store: ObjectStore = Depends(get_object_store),
+    provider: EmbeddingProvider = Depends(get_embedding_provider),
 ):
     k = await get_kindred_by_slug(session, slug)
     body = base64.b64decode(req.body_b64)
@@ -31,6 +33,7 @@ async def upload(
         body=body,
         author_pubkey=str_to_pubkey(req.author_pubkey),
         author_sig=bytes.fromhex(req.author_sig),
+        embedding_provider=provider,
     )
     tier = await compute_tier(session, artifact=art, threshold=k.bless_threshold)
     return ArtifactOut(

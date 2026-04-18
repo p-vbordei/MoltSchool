@@ -5,12 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from kindred.config import Settings
 from kindred.db import make_engine, make_session_factory
+from kindred.embeddings.provider import EmbeddingProvider, get_provider
 from kindred.storage.object_store import InMemoryObjectStore, MinioObjectStore, ObjectStore
 
 _settings: Settings | None = None
 _engine = None
 _session_factory = None
 _store: ObjectStore | None = None
+_provider: EmbeddingProvider | None = None
 
 
 def get_settings() -> Settings:
@@ -55,6 +57,13 @@ async def db_session() -> AsyncIterator[AsyncSession]:
             raise
 
 
+def get_embedding_provider() -> EmbeddingProvider:
+    global _provider
+    if _provider is None:
+        _provider = get_provider(get_settings())
+    return _provider
+
+
 async def require_owner_pubkey(x_owner_pubkey: str = Header(...)) -> bytes:
     """Dev-mode auth: owner sends pubkey in header. Plan 06 replaces with OAuth tokens."""
     if not x_owner_pubkey.startswith("ed25519:"):
@@ -68,6 +77,7 @@ async def require_owner_pubkey(x_owner_pubkey: str = Header(...)) -> bytes:
 __all__ = [
     "Depends",
     "db_session",
+    "get_embedding_provider",
     "get_object_store",
     "get_session_factory",
     "get_settings",

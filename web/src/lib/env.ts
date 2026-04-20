@@ -8,4 +8,6 @@ export const env = {
   nextAuthSecret: process.env.NEXTAUTH_SECRET ?? "",
   githubId: process.env.GITHUB_ID ?? "",
   githubSecret: process.env.GITHUB_SECRET ?? "",
+  googleId: process.env.GOOGLE_ID ?? "",
+  googleSecret: process.env.GOOGLE_SECRET ?? "",
 };

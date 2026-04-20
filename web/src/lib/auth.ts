@@ -1,8 +1,11 @@
 /**
  * Auth.js (NextAuth v5) configuration.
  *
- * v0 scope: GitHub OAuth only, fully wired. Google + Passkey (WebAuthn) are
- * scaffolded as TODOs and not enabled.
+ * v0 scope: GitHub + Google OAuth, fully wired. Passkey (WebAuthn) is
+ * scaffolded as a TODO and not enabled.
+ *
+ * Google provider activates only when `GOOGLE_ID`/`GOOGLE_SECRET` are set, so
+ * deployments without Google creds still boot cleanly with GitHub alone.
  *
  * Self-custody: we no longer mint server-side keypairs. Post-login, a client
  * component (`BootstrapKeys`, mounted in the dashboard) generates Ed25519
@@ -13,7 +16,12 @@
 
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { env } from "@/lib/env";
+
+const googleProvider = env.googleId && env.googleSecret
+  ? [Google({ clientId: env.googleId, clientSecret: env.googleSecret })]
+  : [];
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -38,8 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: env.githubId,
       clientSecret: env.githubSecret,
     }),
-    // TODO(plan-07): Google provider
-    // Google({ clientId: env.googleId, clientSecret: env.googleSecret }),
+    ...googleProvider,
     // TODO(plan-07): Passkey via WebAuthn
     // Passkey({ ... })
   ],

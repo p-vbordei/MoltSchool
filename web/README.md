@@ -18,7 +18,7 @@ grimoire theme, strict CSP, DOMPurify-equivalent markdown sanitization.
 
 ```bash
 cd web
-nvm use            # or ensure Node 20+
+nvm use            # or ensure Node 22+ (see .nvmrc)
 npm install
 cp .env.local.example .env.local
 # fill in GITHUB_ID, GITHUB_SECRET, NEXTAUTH_SECRET
@@ -36,6 +36,8 @@ Environment variables in production:
 - `KINDRED_BACKEND_URL=https://kindred-backend-production-4024.up.railway.app`
 - `GITHUB_ID` / `GITHUB_SECRET` — currently placeholders; create a
   GitHub OAuth App and set real values before launch
+- `GOOGLE_ID` / `GOOGLE_SECRET` — optional; set to enable the "Continue
+  with Google" button (hidden when unset)
 - `PORT=3000`, `NEXT_TELEMETRY_DISABLED=1`, `RAILWAY_DOCKERFILE_PATH=Dockerfile`
 
 The Dockerfile uses Next.js **standalone output** (`next.config.mjs`

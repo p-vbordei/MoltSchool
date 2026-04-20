@@ -58,6 +58,8 @@ to `postgresql+asyncpg://` — no manual transformation needed.
 | `PORT`                    | `3000`                                                      |
 | `GITHUB_ID`               | (placeholder — create a GitHub OAuth App and set real ID)   |
 | `GITHUB_SECRET`           | (placeholder — set alongside `GITHUB_ID`)                   |
+| `GOOGLE_ID`               | (optional — Google OAuth button hidden if unset)            |
+| `GOOGLE_SECRET`           | (optional — set alongside `GOOGLE_ID`)                      |
 
 ### `kindredformat`
 

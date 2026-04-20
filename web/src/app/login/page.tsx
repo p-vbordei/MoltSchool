@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { signIn } from "@/lib/auth";
+import { env } from "@/lib/env";
 
 export default function LoginPage() {
   async function githubSignIn() {
     "use server";
     await signIn("github", { redirectTo: "/dashboard" });
   }
+
+  async function googleSignIn() {
+    "use server";
+    await signIn("google", { redirectTo: "/dashboard" });
+  }
+
+  const googleEnabled = Boolean(env.googleId && env.googleSecret);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-16">
@@ -33,13 +41,24 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 space-y-2 text-xs text-muted-foreground">
-          <button
-            type="button"
-            disabled
-            className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border px-4 py-2 opacity-50"
-          >
-            Google — coming soon
-          </button>
+          {googleEnabled ? (
+            <form action={googleSignIn}>
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-foreground transition-colors hover:bg-muted"
+              >
+                Continue with Google
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border px-4 py-2 opacity-50"
+            >
+              Google — coming soon
+            </button>
+          )}
           <button
             type="button"
             disabled

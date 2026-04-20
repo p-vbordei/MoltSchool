@@ -18,7 +18,7 @@ grimoire theme, strict CSP, DOMPurify-equivalent markdown sanitization.
 
 ```bash
 cd web
-nvm use            # or ensure Node 20+
+nvm use            # or ensure Node 22+ (see .nvmrc)
 npm install
 cp .env.local.example .env.local
 # fill in GITHUB_ID, GITHUB_SECRET, NEXTAUTH_SECRET

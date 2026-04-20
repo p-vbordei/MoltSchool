@@ -128,4 +128,17 @@ launch gate and post-launch metric plan.
 
 ## License
 
-MIT. See `LICENSE` in each package.
+Kindred is multi-licensed to match each component's role:
+
+| Path                         | License        | Why                                                                 |
+|------------------------------|----------------|---------------------------------------------------------------------|
+| `backend/`, `web/`, root     | **AGPL-3.0**   | Network-service copyleft. Forks run as a service must stay open.    |
+| `cli/`                       | **Apache-2.0** | Client tool — permissive adoption, patent grant, NOTICE attribution. |
+| `claude-code-plugin/`        | **Apache-2.0** | Same reasoning as the CLI.                                          |
+| `kindredformat/` (code)      | **Apache-2.0** | Reference implementation — anyone can ship a KAF site.              |
+| `kindredformat/content/` (spec text) | **CC-BY-4.0** | Specification is content, not code. Attribution required.   |
+
+Each package has its own `LICENSE` (and `NOTICE` for Apache-2.0 parts). If
+you redistribute an Apache-2.0-licensed component, preserve the `NOTICE`
+file per §4(d) of the Apache License. If you implement or adapt the KAF
+spec, credit per [`kindredformat/content/NOTICE`](./kindredformat/content/NOTICE).

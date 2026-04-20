@@ -1,0 +1,17 @@
+Kindred Artifact Format (KAF) — specification text
+Copyright 2026 Vlad Bordei
+
+This specification is licensed under the Creative Commons Attribution 4.0
+International License (CC-BY-4.0). See the LICENSE file in this directory
+or https://creativecommons.org/licenses/by/4.0/.
+
+## How to attribute
+
+If you reproduce, adapt, or build on this specification (for example, an
+independent KAF implementation, a fork, or excerpts in a paper or post),
+you must give appropriate credit. The recommended attribution is:
+
+    Based on the Kindred Artifact Format (KAF) specification by
+    Vlad Bordei, https://kindredformat.org — licensed under CC-BY-4.0.
+
+Provide a link to the license, and indicate if changes were made.

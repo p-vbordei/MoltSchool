@@ -55,9 +55,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Derive a stable user id from the OAuth subject. Used client-side to
       // namespace IndexedDB keypairs (`owner-<userId>`, `agent-<userId>`).
       // No secrets or pubkeys are stashed here — the browser holds those.
+      //
+      // Fail closed on email: if the provider omits a stable id (`profile.id`
+      // from GitHub, `profile.sub` from Google/OIDC), we'd otherwise key the
+      // IDB namespace on an email string, which can collide across providers
+      // (same email on GitHub + Google -> shared keystore). Keep the namespace
+      // bound to the provider's own unforgeable subject.
       if (account && profile) {
-        const sub = String(profile.id ?? profile.sub ?? profile.email ?? "");
-        if (sub) token.userId = sub;
+        const rawSub = profile.id ?? profile.sub;
+        const sub = rawSub != null ? String(rawSub) : "";
+        if (sub) token.userId = `${account.provider}:${sub}`;
       }
       return token;
     },

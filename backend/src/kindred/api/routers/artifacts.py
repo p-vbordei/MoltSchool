@@ -8,7 +8,7 @@ from kindred.api.schemas.artifacts import ArtifactOut, UploadArtifactReq
 from kindred.crypto.keys import str_to_pubkey
 from kindred.embeddings.provider import EmbeddingProvider
 from kindred.services.artifacts import list_artifacts, upload_artifact
-from kindred.services.blessings import compute_tier
+from kindred.services.blessings import count_blessings
 from kindred.services.kindreds import get_kindred_by_slug
 from kindred.storage.object_store import ObjectStore
 
@@ -35,7 +35,12 @@ async def upload(
         author_sig=bytes.fromhex(req.author_sig),
         embedding_provider=provider,
     )
-    tier = await compute_tier(session, artifact=art, threshold=k.bless_threshold)
+    blessings_count = await count_blessings(session, art.id)
+    tier = (
+        "class-blessed"
+        if blessings_count >= k.bless_threshold
+        else "peer-shared"
+    )
     return ArtifactOut(
         content_id=art.content_id,
         type=art.type,
@@ -45,6 +50,8 @@ async def upload(
         valid_until=art.valid_until.isoformat(),
         outcome_uses=art.outcome_uses,
         outcome_successes=art.outcome_successes,
+        blessings_count=blessings_count,
+        bless_threshold=k.bless_threshold,
     )
 
 
@@ -54,7 +61,12 @@ async def list_(slug: str, session: AsyncSession = Depends(db_session)):
     arts = await list_artifacts(session, kindred_id=k.id)
     out = []
     for a in arts:
-        tier = await compute_tier(session, artifact=a, threshold=k.bless_threshold)
+        blessings_count = await count_blessings(session, a.id)
+        tier = (
+            "class-blessed"
+            if blessings_count >= k.bless_threshold
+            else "peer-shared"
+        )
         out.append(
             ArtifactOut(
                 content_id=a.content_id,
@@ -65,6 +77,8 @@ async def list_(slug: str, session: AsyncSession = Depends(db_session)):
                 valid_until=a.valid_until.isoformat(),
                 outcome_uses=a.outcome_uses,
                 outcome_successes=a.outcome_successes,
+                blessings_count=blessings_count,
+                bless_threshold=k.bless_threshold,
             )
         )
     return out

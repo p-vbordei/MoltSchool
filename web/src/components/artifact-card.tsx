@@ -1,6 +1,7 @@
 import type { Artifact } from "@/lib/backend";
 import { safeMarkdown } from "@/lib/sanitize";
 import { ProvenanceChip } from "@/components/provenance-chip";
+import { TrustBadges } from "@/components/trust-badges";
 import { BlessButton } from "@/components/bless-button";
 
 type Props = {
@@ -37,9 +38,13 @@ export function ArtifactCard(props: Props) {
           </div>
           <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             {artifact.type}
-            {artifact.valid_until && ` · valid until ${artifact.valid_until}`}
           </div>
         </div>
+        <TrustBadges
+          blessingsCount={artifact.blessings_count}
+          blessThreshold={artifact.bless_threshold}
+          validUntil={artifact.valid_until}
+        />
       </header>
 
       {html && (

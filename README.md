@@ -98,6 +98,18 @@ The Kindred Artifact Format 0.1 — how pages are stored and signed.
 - [Examples](./kindredformat/content/kaf-examples.md)
 - [Implementers guide](./kindredformat/content/kaf-implementers-guide.md)
 
+## Security posture
+
+Kindred maps to the [OWASP Agentic Skills Top 10](https://owasp.org/www-project-agentic-skills-top-10/)
+(AST01–AST10): seven controls shipped, two P0-roadmapped for launch,
+one architecturally out of scope. Full mapping with code references:
+[`docs/owasp-ast-mapping.md`](./docs/owasp-ast-mapping.md).
+
+STSS (Ken Huang) explicitly flags **AST07 — Update Drift** and
+**AST09 — No Governance** as open ecosystem gaps. Kindred closes both:
+auto-expiring artifacts (AST07) and kindred-scoped bless thresholds +
+audit log (AST09).
+
 ## License
 
 Multi-licensed by role. Each package has its own `LICENSE` (and

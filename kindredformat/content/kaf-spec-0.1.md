@@ -1,7 +1,7 @@
 # Kindred Artifact Format (KAF) 0.1
 
 **Status:** Draft — stable for MVP, may receive additive minor revisions.
-**Publication date:** 2026-04-23 (additive revision: `targets` field added to envelope §3; see §3.3).
+**Publication date:** 2026-04-23 (additive revision: `targets` (§3.3) and `permissions` (§3.4) added to envelope §3).
 **Canonical URL:** https://kindredformat.org
 **Reference implementation:** https://github.com/kindred/kindred
 
@@ -114,6 +114,7 @@ Optional fields:
 | `test_harness`   | string            | Reference to a harness that verifies the body   |
 | `superseded_by`  | string            | `content_id` of the replacement artifact        |
 | `targets`        | list[string]      | Agent runtimes this artifact is tested against (§3.3) |
+| `permissions`    | Permissions       | Declared effect surface — transparency (§3.4)   |
 
 ### 3.1 BlessedSig
 
@@ -167,6 +168,40 @@ identifiers. Each entry MUST be a non-empty ASCII string of
 An empty `targets` list is equivalent to omitting the field (no declared
 compatibility). Omitting `targets` means the publisher makes no claim —
 readers SHOULD NOT infer universal compatibility from absence.
+
+### 3.4 Permissions
+
+```
+{
+  "fs_write":    [<string>, ...],   // path globs the artifact asks to write
+  "net":         [<string>, ...],   // host:port or URL patterns it expects to reach
+  "shell_exec":  [<string>, ...],   // command names it expects to run
+  "env_read":    [<string>, ...]    // env-var names it reads
+}
+```
+
+Every sub-list is OPTIONAL; omitting a key means the publisher makes no
+claim for that surface. An **empty list** means "declared none" — e.g.
+`"net": []` is a positive assertion of "no network access expected".
+
+**This is a transparency signal, not a capability grant.** A reader
+MUST NOT treat declared permissions as an authorisation to perform
+those effects, and MUST NOT treat their absence as a guarantee against
+them. Readers SHOULD surface the declared surface to the human
+reviewing the artifact so the human can cross-check against the body
+text.
+
+Value semantics are advisory: path globs follow conventional glob
+syntax (`**`, `*`, `?`), net entries are free-form host-pattern
+strings, shell_exec entries are command names (no arguments), env_read
+entries are env-var names. Readers MAY normalise or deduplicate values
+but MUST NOT invent permissions that were not declared.
+
+Rationale: agent-skill ecosystems (Vett, AST09 "No Governance") have
+shown that even a non-binding, author-declared surface gives reviewers
+a faster first-pass than reading the body top-to-bottom. A forged
+permissions block cannot confer extra privilege — the signing key only
+attests to what was declared.
 
 ## 4. Canonical JSON
 

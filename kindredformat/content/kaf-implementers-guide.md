@@ -200,6 +200,26 @@ An old reader MUST ignore the unknown `targets` field (§11). Its presence
 or absence does not change signature verification semantics; it is a
 discovery signal only.
 
+### Vector 5c — permissions block (additive, §3.4)
+
+Input metadata:
+
+```json
+{"permissions":{"fs_write":["tests/**"],"net":[],"shell_exec":["git"]}}
+```
+
+Canonical bytes (exact, UTF-8):
+
+```
+{"permissions":{"fs_write":["tests/**"],"net":[],"shell_exec":["git"]}}
+```
+
+`content_id = "sha256:57542a28610eeb57c050dd3091edf6415ffe71c6197c594c6bfcca59e5b716cc"`
+
+Old readers ignore the unknown `permissions` field (§11). Its presence
+is a transparency signal for human reviewers — not a capability grant.
+Absence is NOT an assertion that no effects occur.
+
 ### Vector 5 — blessing adds to same content_id
 
 Given a valid envelope from Vector 3 and a second Ed25519 keypair,

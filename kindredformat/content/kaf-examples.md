@@ -21,6 +21,11 @@ valid_until: "2026-10-18T00:00:00Z"
 body_sha256: "3a5f7d9b1c2e4f60a8b1c2d3e4f50617283949506172839405a6b7c8d9e0f1a2"
 tags: [tdd, testing, workflow]
 targets: [claude-code, codex, mcp-generic]
+permissions:
+  fs_write: ["tests/**", "src/**"]
+  shell_exec: ["pytest", "git"]
+  net: []
+  env_read: ["PYTEST_ADDOPTS"]
 blessed_sigs:
   - signer: "ed25519:a0b1c2d3..."
     sig:    "<hex>"
@@ -47,6 +52,9 @@ Reader checks:
 5. When fetching the body, verify `sha256(body) == body_sha256`.
 6. If the kindred's bless threshold is 2 and both blessings verify →
    `class-blessed`. Otherwise `peer-shared`.
+7. Surface `permissions` to the human reviewer (§3.4). A body that
+   runs `rm -rf` but declares `shell_exec: [pytest, git]` is a red
+   flag — the declaration and the body disagree.
 
 ---
 

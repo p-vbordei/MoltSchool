@@ -75,6 +75,21 @@
       "expected_content_id": "sha256:d87ca55fd228185f930ea4d0a85fe39e1eba17ccc3cd59805cdbf3c447fb1fa8"
     },
     {
+      "id": "v6_permissions",
+      "description": "permissions block (additive KAF field, §3.4) - canonical bytes stable",
+      "input_type": "dict",
+      "input": {
+        "permissions": {
+          "fs_write": ["tests/**"],
+          "net": [],
+          "shell_exec": ["git"]
+        }
+      },
+      "expected_canonical_json_hex": "7b227065726d697373696f6e73223a7b2266735f7772697465223a5b2274657374732f2a2a225d2c226e6574223a5b5d2c227368656c6c5f65786563223a5b22676974225d7d7d",
+      "expected_canonical_json_utf8": "{\"permissions\":{\"fs_write\":[\"tests/**\"],\"net\":[],\"shell_exec\":[\"git\"]}}",
+      "expected_content_id": "sha256:57542a28610eeb57c050dd3091edf6415ffe71c6197c594c6bfcca59e5b716cc"
+    },
+    {
       "id": "sig_v1",
       "description": "ed25519 sign of v5 content_id with sk=00*32",
       "secret_key_hex": "0000000000000000000000000000000000000000000000000000000000000000",

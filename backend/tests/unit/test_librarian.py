@@ -121,13 +121,13 @@ async def test_retrieve_top_k_returns_expired_shadow_count(db_session):
     # Expired artefact whose body matches the query text exactly — would have
     # been the top hit without the expiry filter.
     expired_when = datetime.now(UTC) - timedelta(days=1)
-    expired = await _add_artifact(
+    await _add_artifact(
         setup, logical_name="stale-topic", tags=[],
         body=b"stale topic exact match body",
         valid_until=expired_when, provider=provider,
     )
     # Fresh artefact with unrelated body — lower similarity than expired.
-    fresh = await _add_artifact(
+    await _add_artifact(
         setup, logical_name="fresh-unrelated", tags=[],
         body=b"totally different content about cats",
         provider=provider,
@@ -153,5 +153,3 @@ async def test_retrieve_top_k_returns_expired_shadow_count(db_session):
     all_names = [a.logical_name for a, _ in scored_all]
     assert "stale-topic" in all_names
     assert shadow_all == 0
-    # Silence unused-local warnings — we assert via logical_name above.
-    _ = (expired, fresh)

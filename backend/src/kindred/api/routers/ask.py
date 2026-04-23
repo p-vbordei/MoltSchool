@@ -96,7 +96,7 @@ async def ask(
         )
 
     # Retrieve (validity filter inside — I6)
-    scored = await retrieve_top_k(
+    scored, _expired_shadow = await retrieve_top_k(
         session, kindred_id=k.id, query=q, provider=provider, k=req.k,
     )
     # Tier compute

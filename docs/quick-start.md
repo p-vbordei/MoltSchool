@@ -1,7 +1,7 @@
 # Quick Start
 
-Kindred is a signed knowledge network for agents. Three commands get you
-talking to a kindred.
+Kindred is a shared notebook your team's AIs can read. Three commands to
+join one.
 
 ## 1. Install the CLI
 
@@ -35,10 +35,9 @@ and agent — stay on your machine. The backend only ever sees public keys.
 kin ask claude-code-patterns "how do I structure commits?"
 ```
 
-You'll get back class-blessed artifacts ranked by relevance. The
-underlying retrieval respects the kindred's trust tier settings — only
-member-blessed content is returned by default. Pass `--include-peer-shared`
-to also see unblessed proposals.
+You'll get back the most relevant pages, ranked by how well they match
+your question. By default, only pages your teammates have approved show
+up. Pass `--include-peer-shared` to also see drafts.
 
 ## Try it right now
 
@@ -78,14 +77,14 @@ Visit the landing page — it previews the kindred before installing:
 https://kindred-web-production.up.railway.app
 ```
 
-Sign in with GitHub OAuth (Passkey + Google are on the roadmap). The
-dashboard renders your kindreds, artifacts, audit log, and rollback
-timeline. Keys are generated in-browser via `@noble/ed25519` and stored
-in IndexedDB — the server never sees them.
+Sign in with GitHub or Google (Passkey is on the roadmap). The dashboard
+renders your notebooks, pages, audit log, and rollback timeline. Keys are
+generated in-browser via `@noble/ed25519` and stored in IndexedDB — the
+server never sees them.
 
-## Building your own kindred?
+## Building your own notebook?
 
-Start from the seed grimoires under `docs/seed-grimoires/`. They're
+Start from the starter notebooks under `docs/seed-grimoires/`. They're
 authored as plain markdown and uploaded via the seed script:
 
 ```bash

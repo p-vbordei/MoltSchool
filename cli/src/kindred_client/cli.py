@@ -12,7 +12,7 @@ from kindred_client.commands import status as status_cmd
 
 app = typer.Typer(
     name="kin",
-    help="Kindred CLI — join kindreds, ask the knowledge, contribute artifacts.",
+    help="The kin CLI — join your team's shared notebook, ask it questions, add pages.",
     no_args_is_help=True,
 )
 

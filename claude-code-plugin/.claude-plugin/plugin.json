@@ -1,7 +1,7 @@
 {
   "name": "@kindred/claude-code-plugin",
   "version": "0.1.0",
-  "description": "Kindred — a knowledge co-op for your AI agent. Installs a retrieval skill, MCP server, and outcome hook.",
+  "description": "Kindred — your team's shared notebook, wired into Claude Code. Installs a retrieval skill, MCP server, and outcome hook.",
   "license": "MIT",
   "author": "Kindred",
   "homepage": "https://kindred.sh",

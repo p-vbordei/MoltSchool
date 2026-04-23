@@ -1,4 +1,4 @@
-"""`kin ask <slug> "<query>"` — retrieve framed artifacts from a kindred."""
+"""`kin ask <slug> "<query>"` — ask your team's shared notebook and print the most relevant pages."""
 from __future__ import annotations
 
 import asyncio
@@ -67,7 +67,7 @@ def register(app: typer.Typer) -> None:
             False, "--peer-shared", help="Include peer-shared (unsigned) artifacts"
         ),
     ) -> None:
-        """Ask the kindred's grimoire and print framed artifacts + provenance."""
+        """Ask your team's shared notebook and print the most relevant pages with provenance."""
         try:
             resp = asyncio.run(_run_ask(slug, query, k=k, peer_shared=peer_shared))
         except APIError as e:

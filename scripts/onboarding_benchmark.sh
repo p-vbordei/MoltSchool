@@ -9,6 +9,9 @@
 #   * The backend is empty OR already contains the `claude-code-patterns`
 #     kindred (the seed script can populate it).
 #   * `python3` and `pip` are on PATH.
+#   * `date +%s%N` returns nanoseconds — Linux with GNU coreutils,
+#     or macOS ≥14.1 (BSD date gained %N in FreeBSD 14.1). Older macOS
+#     returns a literal "N" which breaks the ms arithmetic below.
 #
 # Usage:
 #   ./scripts/onboarding_benchmark.sh [--invite <url>]

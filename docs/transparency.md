@@ -69,8 +69,8 @@ member.
 
 The reference implementation lives in
 [`backend/src/kindred/services/health.py`](../backend/src/kindred/services/health.py),
-with tests in [`backend/tests/api/test_health.py`](../backend/tests/api/test_health.py)
-and [`backend/tests/api/test_health_api.py`](../backend/tests/api/test_health_api.py).
+with indicator tests in [`backend/tests/unit/test_services_health.py`](../backend/tests/unit/test_services_health.py)
+and endpoint tests in [`backend/tests/api/test_health_api.py`](../backend/tests/api/test_health_api.py).
 The HTTP contract is in
 [`backend/src/kindred/api/routers/network_health.py`](../backend/src/kindred/api/routers/network_health.py).
 

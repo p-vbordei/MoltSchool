@@ -36,6 +36,31 @@ async def test_slug_validation(db_session):
         )
 
 
+@pytest.mark.parametrize(
+    "slug",
+    [
+        "kindred",
+        "kindred-official",
+        "official",
+        "admin",
+        "root",
+        "anthropic",
+        "sigstore",
+        "kindred-totally-real",
+        "anthropic-evil",
+        "sigstore-fake",
+        "official-scam",
+    ],
+)
+async def test_reserved_slugs_rejected(db_session, slug):
+    _, pk = generate_keypair()
+    u = await register_user(db_session, email="r@b.c", display_name="R", pubkey=pk)
+    with pytest.raises(ValidationError, match="reserved"):
+        await create_kindred(
+            db_session, owner_id=u.id, slug=slug, display_name="X"
+        )
+
+
 async def test_get_by_slug(db_session):
     _, pk = generate_keypair()
     u = await register_user(db_session, email="a@b.c", display_name="A", pubkey=pk)

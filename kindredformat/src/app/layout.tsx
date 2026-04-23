@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "KAF — Kindred Artifact Format",
   description:
-    "KAF 0.1 — a minimal portable envelope for agent-shareable knowledge artifacts.",
+    "KAF 0.1 — the file format for pages in a team's shared notebook for AI. A minimal, portable envelope.",
 };
 
 export default function RootLayout({

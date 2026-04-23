@@ -126,3 +126,15 @@ nav a:hover { color: var(--accent); }
   border-top: 1px solid var(--border);
   margin: 2em 0;
 }
+
+.plain-words {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin: 0 0 2rem 0;
+  background: var(--code-bg);
+}
+.plain-words p {
+  margin: 0;
+  font-size: 0.95rem;
+}

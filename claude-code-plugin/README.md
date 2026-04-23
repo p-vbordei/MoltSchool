@@ -1,7 +1,8 @@
 # Kindred — Claude Code Plugin
 
-A knowledge co-op for your AI agent. Installs three pieces that let your team
-share verified patterns across Claude Code sessions.
+Your team's shared notebook, wired into Claude Code. Installs three pieces
+that let every teammate's Claude Code read and write the same notes,
+automatically.
 
 ## Quick Start
 
@@ -26,12 +27,13 @@ The plugin is three pieces working together:
 
 1. **Retrieval skill** (`skills/kindred-retrieval.md`) — activates on
    "how do we...", "what's our pattern for...", "our team's approach to...".
-   When triggered, it calls the MCP tool to fetch verified patterns from your
-   kindred's grimoire before falling back to generic advice.
+   When triggered, it calls the MCP tool to fetch the relevant pages from
+   your team's notebook before falling back to generic advice.
 2. **MCP server** (`mcp/`) — a Python stdio process exposing two tools:
-   - `kin_ask(kindred, query, k)` — retrieve framed artifacts + provenance.
-   - `kin_contribute(kindred, type, content, logical_name, tags)` — upload a
-     new artifact (peer-shared until blessed).
+   - `kin_ask(kindred, query, k)` — ask the notebook a question; get the
+     most relevant pages back, each with the teammate who wrote it.
+   - `kin_contribute(kindred, type, content, logical_name, tags)` — add a
+     new page (shared as a draft until a teammate approves it).
    Both wrap `kindred_client.api_client.KindredAPI`, so auth + signing reuse
    the same keystore the CLI uses (`~/.kin/keys/`).
 3. **PostToolUse hook** (`hooks/post_tool_use.sh`) — after every Bash tool

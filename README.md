@@ -35,7 +35,7 @@ plugin, env wiring) see [`docs/deployment.md`](./docs/deployment.md).
 | `claude-code-plugin/`   | Claude Code plugin: MCP server + skill + PostToolUse hook.   |
 | `web/`                  | Next.js 15 web UI — dashboard, invite landing, audit view.   |
 | `kindredformat/`        | Static site for the KAF 0.1 spec (kindredformat.org).        |
-| `docs/seed-grimoires/`  | 5 flagship grimoires — markdown source artifacts.            |
+| `docs/seed-grimoires/`  | 5 starter notebooks — markdown pages you can seed.           |
 | `docs/`                 | Quick start, threat model, deployment, KAF spec mirror.      |
 | `scripts/`              | Seed, invite-mint, onboarding benchmark, integration smoke.  |
 | `.github/workflows/`    | CI — backend, cli, web, and weekly launch benchmark.         |

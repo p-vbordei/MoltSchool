@@ -1,7 +1,7 @@
 # src/kindred/models/kindred.py
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from kindred.models.base import Base, TimestampMixin
@@ -16,3 +16,4 @@ class Kindred(Base, TimestampMixin):
     description: Mapped[str] = mapped_column(String(1024), default="")
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     bless_threshold: Mapped[int] = mapped_column(Integer, default=2)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

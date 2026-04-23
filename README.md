@@ -44,7 +44,13 @@ plugin, env wiring) see [`docs/deployment.md`](./docs/deployment.md).
 
 ```bash
 pip install kindred-client
-kin join <invite-url>
+
+# Public kindred: one-line install, no invite needed.
+kin install claude-code-patterns --backend https://kindred-backend-production-4024.up.railway.app
+
+# Private kindred: paste an invite URL.
+kin install <invite-url>
+
 kin ask claude-code-patterns "how do I structure commits?"
 ```
 

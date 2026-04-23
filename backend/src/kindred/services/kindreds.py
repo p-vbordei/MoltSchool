@@ -1,14 +1,22 @@
 import re
+import secrets
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from kindred.api.deps import get_settings
+from kindred.crypto.canonical import canonical_json
+from kindred.crypto.keys import sign
 from kindred.errors import ConflictError, NotFoundError, ValidationError
 from kindred.models.agent import Agent
+from kindred.models.invite import Invite
 from kindred.models.kindred import Kindred
 from kindred.models.membership import AgentKindredMembership
 from kindred.services.audit import append_event
+
+PUBLIC_INSTALL_INVITE_TTL_MINUTES = 15
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,63}$")
 
@@ -21,6 +29,7 @@ async def create_kindred(
     display_name: str,
     description: str = "",
     bless_threshold: int = 2,
+    is_public: bool = False,
 ) -> Kindred:
     if not SLUG_RE.match(slug):
         raise ValidationError(f"invalid slug: {slug!r}")
@@ -35,6 +44,7 @@ async def create_kindred(
         description=description,
         created_by=owner_id,
         bless_threshold=bless_threshold,
+        is_public=is_public,
     )
     session.add(k)
     await session.flush()
@@ -54,6 +64,57 @@ async def get_kindred_by_slug(session: AsyncSession, slug: str) -> Kindred:
     if not k:
         raise NotFoundError(f"kindred not found: {slug}")
     return k
+
+
+async def mint_public_install_invite(
+    session: AsyncSession,
+    *,
+    kindred: Kindred,
+) -> Invite:
+    """Server-mint a short-lived, single-use invite for a public kindred.
+
+    Attributed to the kindred's owner (created_by) so the audit trail stays
+    coherent. The facilitator key signs the canonical invite body — this
+    lets auditors tell server-minted public invites apart from
+    owner-issued ones (issuer_sig was produced by the facilitator, not the
+    owner).
+    """
+    if not kindred.is_public:
+        raise ValidationError("kindred is not public")
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(UTC) + timedelta(
+        minutes=PUBLIC_INSTALL_INVITE_TTL_MINUTES
+    )
+    inv_body = canonical_json(
+        {
+            "kindred_id": str(kindred.id),
+            "token": token,
+            "expires_at": expires_at.isoformat(),
+            "public_install": True,
+        }
+    )
+    facilitator_sk = get_settings().facilitator_signing_key
+    issuer_sig = sign(facilitator_sk, inv_body)
+
+    inv = Invite(
+        kindred_id=kindred.id,
+        issued_by=kindred.created_by,
+        token=token,
+        expires_at=expires_at,
+        max_uses=1,
+        uses=0,
+        issuer_sig=issuer_sig,
+    )
+    session.add(inv)
+    await session.flush()
+    await append_event(
+        session,
+        kindred_id=kindred.id,
+        event_type="public_install_invite_minted",
+        payload={"token_prefix": token[:8]},
+    )
+    return inv
 
 
 async def list_user_kindreds(

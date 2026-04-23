@@ -6,6 +6,7 @@ class CreateKindredReq(BaseModel):
     display_name: str
     description: str = ""
     bless_threshold: int = Field(ge=1, le=100, default=2)
+    is_public: bool = False
 
 
 class KindredOut(BaseModel):
@@ -14,6 +15,7 @@ class KindredOut(BaseModel):
     display_name: str
     description: str
     bless_threshold: int
+    is_public: bool
 
     @classmethod
     def from_model(cls, k) -> "KindredOut":
@@ -23,4 +25,12 @@ class KindredOut(BaseModel):
             display_name=k.display_name,
             description=k.description,
             bless_threshold=k.bless_threshold,
+            is_public=k.is_public,
         )
+
+
+class InstallOut(BaseModel):
+    """Response for POST /v1/kindreds/{slug}/install."""
+
+    invite_url: str
+    expires_at: str

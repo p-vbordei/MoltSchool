@@ -5,6 +5,7 @@ import typer
 
 from kindred_client.commands import ask as ask_cmd
 from kindred_client.commands import contribute as contribute_cmd
+from kindred_client.commands import install as install_cmd
 from kindred_client.commands import join as join_cmd
 from kindred_client.commands import leave as leave_cmd
 from kindred_client.commands import save as save_cmd
@@ -24,6 +25,7 @@ def _callback() -> None:
 
 # Registered lazily in each module so tests can import them in isolation.
 join_cmd.register(app)
+install_cmd.register(app)
 ask_cmd.register(app)
 contribute_cmd.register(app)
 save_cmd.register(app)

@@ -118,3 +118,117 @@ async def test_rate_limit_smoke(rate_limited_client):
     """Smoke: non-rate-limited endpoint returns 200 with middleware installed."""
     r = await rate_limited_client.get("/healthz")
     assert r.status_code == 200
+
+
+def test_client_ip_prefers_xff():
+    from unittest.mock import MagicMock
+
+    req = MagicMock()
+    req.headers = {"x-forwarded-for": "1.2.3.4, 10.0.0.1"}
+    req.client = MagicMock(host="10.0.0.2")
+    assert RateLimitMiddleware._client_ip(req) == "1.2.3.4"
+
+
+def test_client_ip_falls_back_to_client_host():
+    from unittest.mock import MagicMock
+
+    req = MagicMock()
+    req.headers = {}
+    req.client = MagicMock(host="10.0.0.5")
+    assert RateLimitMiddleware._client_ip(req) == "10.0.0.5"
+
+
+def test_client_ip_unknown_when_no_client():
+    from unittest.mock import MagicMock
+
+    req = MagicMock()
+    req.headers = {}
+    req.client = None
+    assert RateLimitMiddleware._client_ip(req) == "unknown"
+
+
+async def test_install_rate_limit_enforced_by_ip():
+    """POST /install past the per-IP hourly limit returns 429."""
+    import pytest_asyncio  # noqa: F401
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    store = InMemoryObjectStore()
+
+    async def _db():
+        async with factory() as s:
+            try:
+                yield s
+                await s.commit()
+            except Exception:
+                await s.rollback()
+                raise
+
+    def _settings():
+        return _mk_settings(rate_limit_install_per_hour=2)
+
+    # Reset middleware buckets by reinstalling via the app stack is complex; instead
+    # set the cached settings on the single RateLimitMiddleware instance and clear buckets.
+    # Locate the middleware instance through the app's middleware stack.
+    app.dependency_overrides[db_session] = _db
+    app.dependency_overrides[get_object_store] = lambda: store
+    app.dependency_overrides[get_settings] = _settings
+
+    # Seed a public kindred directly.
+    from kindred.models.kindred import Kindred
+    from kindred.models.user import User
+
+    async with factory() as s:
+        u = User(email="rl@test.dev", display_name="rl", pubkey=b"\x00" * 32)
+        s.add(u)
+        await s.flush()
+        k = Kindred(
+            slug="rl-public",
+            display_name="RL Public",
+            created_by=u.id,
+            bless_threshold=2,
+            is_public=True,
+        )
+        s.add(k)
+        await s.commit()
+
+    # Patch the RateLimitMiddleware's cached settings + reset buckets.
+    # The middleware is installed at app startup; grab it via the app stack walk.
+    # Starlette exposes the middleware chain through app.middleware_stack after build.
+    mw = None
+    for m in app.user_middleware:
+        if m.cls is RateLimitMiddleware:
+            # user_middleware holds Middleware configs, not instances; need to walk built stack.
+            pass
+    # Built stack: traverse .app recursively looking for RateLimitMiddleware instance.
+    node = getattr(app, "middleware_stack", None)
+    while node is not None:
+        if isinstance(node, RateLimitMiddleware):
+            mw = node
+            break
+        node = getattr(node, "app", None)
+    assert mw is not None, "RateLimitMiddleware not found in stack"
+    mw._settings = _settings()
+    mw._buckets.clear()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        r1 = await c.post("/v1/kindreds/rl-public/install")
+        r2 = await c.post("/v1/kindreds/rl-public/install")
+        r3 = await c.post("/v1/kindreds/rl-public/install")
+
+    assert r1.status_code == 200, r1.text
+    assert r2.status_code == 200, r2.text
+    assert r3.status_code == 429, r3.text
+    assert r3.json()["error"] == "RateLimit"
+
+    app.dependency_overrides.clear()
+    mw._settings = None
+    mw._buckets.clear()
+    await engine.dispose()

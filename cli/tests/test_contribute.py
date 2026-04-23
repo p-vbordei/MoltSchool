@@ -145,9 +145,3 @@ def test_contribute_unknown_kindred_errors(fake_home, tmp_path):
     )
     assert result.exit_code == 2
     assert "not joined" in result.stdout
-
-
-def test_save_this_placeholder(fake_home):
-    result = runner.invoke(app, ["save", "this"])
-    assert result.exit_code == 0
-    assert "Not yet implemented" in result.stdout

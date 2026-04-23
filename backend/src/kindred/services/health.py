@@ -12,9 +12,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from kindred.api.schemas.health import RetrievalUtility, TTFUR
+from kindred.api.schemas.health import RetrievalUtility, TTFUR, TrustPropagation
 from kindred.facilitator.outcomes import SUCCESS_RESULTS
 from kindred.models.agent import Agent
+from kindred.models.artifact import Artifact, Blessing
 from kindred.models.audit import AuditLog
 from kindred.models.event import Event
 from kindred.models.membership import AgentKindredMembership
@@ -121,4 +122,33 @@ async def compute_ttfur(
         sample_size=len(deltas_seconds),
         p50_seconds=_percentile(deltas_seconds, 0.5),
         p90_seconds=_percentile(deltas_seconds, 0.9),
+    )
+
+
+async def compute_trust_propagation(
+    session: AsyncSession, *, kindred_id: UUID, threshold: int,
+) -> TrustPropagation:
+    """For each artifact with >= threshold blessings, compute seconds from
+    artifact.created_at to the threshold-th blessing's created_at."""
+    artifacts = list((await session.execute(
+        select(Artifact).where(Artifact.kindred_id == kindred_id)
+    )).scalars())
+
+    deltas: list[float] = []
+    for art in artifacts:
+        blessings = list((await session.execute(
+            select(Blessing).where(Blessing.artifact_id == art.id)
+            .order_by(Blessing.created_at.asc())
+        )).scalars())
+        if len(blessings) < threshold:
+            continue
+        nth = blessings[threshold - 1]
+        delta = (_as_utc(nth.created_at) - _as_utc(art.created_at)).total_seconds()
+        if delta >= 0:
+            deltas.append(delta)
+
+    return TrustPropagation(
+        promoted_artifacts=len(deltas),
+        p50_seconds=_percentile(deltas, 0.5),
+        p90_seconds=_percentile(deltas, 0.9),
     )

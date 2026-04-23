@@ -5,7 +5,11 @@ from uuid import uuid4
 
 from sqlalchemy import func, select
 
-from kindred.services.health import compute_retrieval_utility, compute_ttfur
+from kindred.services.health import (
+    compute_retrieval_utility,
+    compute_trust_propagation,
+    compute_ttfur,
+)
 from tests.helpers import make_full_setup
 
 
@@ -213,4 +217,72 @@ async def test_ttfur_measures_join_to_first_success(db_session):
     # p50 over [30.0, 90.0] with nearest-rank picker — accept either endpoint.
     assert result.p50_seconds is not None
     assert 25.0 <= result.p50_seconds <= 95.0
+    assert result.p90_seconds is not None
+
+
+async def _seed_artifact(db_session, kindred, *, created_at):
+    from datetime import timedelta
+    from kindred.models.artifact import Artifact
+    art = Artifact(
+        content_id=f"ART-{uuid4().hex[:8]}",
+        kindred_id=kindred.id,
+        type="routine",
+        logical_name="t",
+        author_pubkey=b"x" * 32,
+        author_sig=b"x" * 64,
+        valid_from=created_at,
+        valid_until=created_at + timedelta(days=365),
+        tags=[],
+    )
+    art.created_at = created_at
+    db_session.add(art)
+    await db_session.flush()
+    return art
+
+
+async def _seed_blessing(db_session, artifact, *, signer_agent_id, created_at):
+    from kindred.models.artifact import Blessing
+    b = Blessing(
+        artifact_id=artifact.id,
+        signer_pubkey=uuid4().bytes * 2,
+        signer_agent_id=signer_agent_id,
+        sig=b"x" * 64,
+    )
+    b.created_at = created_at
+    db_session.add(b)
+    await db_session.flush()
+    return b
+
+
+async def test_trust_propagation_measures_publish_to_tier_promotion(db_session):
+    """For each artifact whose blessings reached threshold, compute
+    (nth_blessing.created_at − artifact.created_at) where n = threshold."""
+    from datetime import UTC, datetime, timedelta
+    setup = await make_full_setup(db_session, slug="trust-prop-test")
+    kindred = setup["kindred"]
+    signer_id = setup["agent_id"]
+    now = datetime.now(UTC)
+
+    # Artifact A: 2 blessings, promoted ~60s after publish
+    a = await _seed_artifact(db_session, kindred, created_at=now - timedelta(minutes=5))
+    await _seed_blessing(db_session, a, signer_agent_id=signer_id,
+                         created_at=now - timedelta(minutes=5) + timedelta(seconds=30))
+    await _seed_blessing(db_session, a, signer_agent_id=signer_id,
+                         created_at=now - timedelta(minutes=5) + timedelta(seconds=60))
+
+    # Artifact B: 2 blessings, promoted ~300s after publish
+    b = await _seed_artifact(db_session, kindred, created_at=now - timedelta(minutes=30))
+    await _seed_blessing(db_session, b, signer_agent_id=signer_id,
+                         created_at=now - timedelta(minutes=30) + timedelta(seconds=120))
+    await _seed_blessing(db_session, b, signer_agent_id=signer_id,
+                         created_at=now - timedelta(minutes=30) + timedelta(seconds=300))
+
+    # Artifact C: 1 blessing only — not promoted, excluded
+    c = await _seed_artifact(db_session, kindred, created_at=now)
+    await _seed_blessing(db_session, c, signer_agent_id=signer_id, created_at=now)
+
+    result = await compute_trust_propagation(db_session, kindred_id=kindred.id, threshold=2)
+    assert result.promoted_artifacts == 2
+    assert result.p50_seconds is not None
+    assert 55.0 <= result.p50_seconds <= 305.0
     assert result.p90_seconds is not None

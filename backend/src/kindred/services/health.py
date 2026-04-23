@@ -6,15 +6,18 @@ only aggregate counts and percentiles.
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from kindred.api.schemas.health import RetrievalUtility
+from kindred.api.schemas.health import RetrievalUtility, TTFUR
 from kindred.facilitator.outcomes import SUCCESS_RESULTS
+from kindred.models.agent import Agent
 from kindred.models.audit import AuditLog
 from kindred.models.event import Event
+from kindred.models.membership import AgentKindredMembership
 
 
 def _percentile(values: list[float], q: float) -> float | None:
@@ -23,6 +26,16 @@ def _percentile(values: list[float], q: float) -> float | None:
     ordered = sorted(values)
     idx = max(0, min(len(ordered) - 1, int(round(q * (len(ordered) - 1)))))
     return ordered[idx]
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """Coerce a possibly tz-naive datetime to UTC.
+
+    SQLAlchemy+SQLite drops tzinfo from ``DateTime(timezone=True)`` columns;
+    Postgres preserves it. This helper lets us subtract naive and aware
+    datetimes without a TypeError in tests.
+    """
+    return dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt
 
 
 async def compute_retrieval_utility(
@@ -51,4 +64,61 @@ async def compute_retrieval_utility(
         success_rate=(len(successes) / len(outcomes)) if outcomes else 0.0,
         mean_rank_of_chosen=(sum(ranks) / len(ranks)) if ranks else 0.0,
         top1_precision=(sum(1 for r in ranks if r == 0) / len(ranks)) if ranks else 0.0,
+    )
+
+
+async def compute_ttfur(
+    session: AsyncSession, *, kindred_id: UUID,
+) -> TTFUR:
+    """Time from agent joining the kindred until their first success outcome.
+
+    Joined = AgentKindredMembership.created_at. First success = earliest
+    ``outcome_reported`` event with result in SUCCESS_RESULTS whose ``audit_id``
+    references an /ask audit performed by that agent's pubkey.
+    """
+    members_q = (
+        select(AgentKindredMembership, Agent.pubkey)
+        .join(Agent, AgentKindredMembership.agent_id == Agent.id)
+        .where(AgentKindredMembership.kindred_id == kindred_id)
+    )
+    member_rows = (await session.execute(members_q)).all()
+
+    # Fetch outcome_reported events once, ordered asc, to find the first-success per agent.
+    outcome_events = list((await session.execute(
+        select(Event).where(
+            Event.kindred_id == kindred_id,
+            Event.event_type == "outcome_reported",
+        ).order_by(Event.created_at.asc())
+    )).scalars())
+
+    deltas_seconds: list[float] = []
+    for membership, agent_pubkey in member_rows:
+        agent_asks = list((await session.execute(
+            select(AuditLog.id).where(
+                AuditLog.kindred_id == kindred_id,
+                AuditLog.agent_pubkey == agent_pubkey,
+                AuditLog.action == "ask",
+            )
+        )).scalars())
+        if not agent_asks:
+            continue
+        ask_ids = {str(aid) for aid in agent_asks}
+
+        first_success_at: datetime | None = None
+        for e in outcome_events:
+            if (e.payload.get("result") in SUCCESS_RESULTS
+                    and e.payload.get("audit_id") in ask_ids):
+                first_success_at = e.created_at
+                break
+        if first_success_at is None:
+            continue
+
+        delta = (_as_utc(first_success_at) - _as_utc(membership.created_at)).total_seconds()
+        if delta >= 0:
+            deltas_seconds.append(delta)
+
+    return TTFUR(
+        sample_size=len(deltas_seconds),
+        p50_seconds=_percentile(deltas_seconds, 0.5),
+        p90_seconds=_percentile(deltas_seconds, 0.9),
     )

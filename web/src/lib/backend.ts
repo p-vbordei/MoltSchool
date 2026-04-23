@@ -25,6 +25,10 @@ export type Artifact = {
   tags?: string[];
   blessings?: Array<{ signer: string; sig: string }>;
   outcomes?: { positive: number; negative: number };
+  /** Number of valid blessings on this artifact. */
+  blessings_count?: number;
+  /** Threshold from the kindred — blessings_count >= threshold = blessed tier. */
+  bless_threshold?: number;
 };
 
 export type AuditEvent = {

@@ -19,3 +19,5 @@ class ArtifactOut(BaseModel):
     valid_until: str
     outcome_uses: int
     outcome_successes: int
+    blessings_count: int
+    bless_threshold: int

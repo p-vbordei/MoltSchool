@@ -94,10 +94,18 @@ def kin_contribute_tool() -> Tool:
 
 def _write_last_audit_id(audit_id: str) -> None:
     """Write the latest /ask audit_id to ~/.kin/last_audit_id for the
-    PostToolUse hook to consume."""
-    p = Path.home() / ".kin" / "last_audit_id"
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(audit_id)
+    PostToolUse hook to consume.
+
+    Best-effort: sentinel is an optimization; kin_ask must not fail if the
+    write errors. Overwrites any pending sentinel — if the user asked twice
+    before running Bash, only the most recent audit_id is credited.
+    """
+    try:
+        p = Path.home() / ".kin" / "last_audit_id"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(audit_id)
+    except OSError:
+        pass
 
 
 async def kin_ask(kindred: str, query: str, k: int = 5) -> str:

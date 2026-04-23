@@ -37,7 +37,7 @@ if [[ -f "$AUDIT_ID_FILE" ]]; then
     AUDIT_ID="$(cat "$AUDIT_ID_FILE" 2>/dev/null || true)"
 fi
 
-python3 - "$TOOL" "$EXIT_CODE" "$TS" "$SNIPPET_FILE" "$HIST_DIR/$TS.json" "$AUDIT_ID" <<'PY'
+python3 - "$TOOL" "$EXIT_CODE" "$TS" "$SNIPPET_FILE" "$HIST_DIR/$TS.json" "$AUDIT_ID" <<'PY' || true
 import json, sys, pathlib
 tool, exit_code, ts, snippet_path, out_path, audit_id = sys.argv[1:7]
 snippet = pathlib.Path(snippet_path).read_text(errors="replace")

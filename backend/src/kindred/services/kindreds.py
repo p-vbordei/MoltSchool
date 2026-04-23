@@ -12,6 +12,32 @@ from kindred.services.audit import append_event
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,63}$")
 
+# Reserved to prevent day-one impersonation of first-party or trust-authority
+# identities. Checked as exact match and as prefix for namespaced squatting
+# (e.g. `anthropic-evil` is blocked because it starts with `anthropic-`).
+RESERVED_SLUGS = frozenset(
+    {
+        "kindred",
+        "kindred-official",
+        "kindred-admin",
+        "kindred-security",
+        "official",
+        "admin",
+        "root",
+        "system",
+        "security",
+        "anthropic",
+        "sigstore",
+    }
+)
+RESERVED_PREFIXES = ("kindred-", "anthropic-", "sigstore-", "official-")
+
+
+def _is_reserved(slug: str) -> bool:
+    if slug in RESERVED_SLUGS:
+        return True
+    return any(slug.startswith(p) for p in RESERVED_PREFIXES)
+
 
 async def create_kindred(
     session: AsyncSession,
@@ -24,6 +50,8 @@ async def create_kindred(
 ) -> Kindred:
     if not SLUG_RE.match(slug):
         raise ValidationError(f"invalid slug: {slug!r}")
+    if _is_reserved(slug):
+        raise ValidationError(f"reserved slug: {slug!r}")
     exists = (
         await session.execute(select(Kindred).where(Kindred.slug == slug))
     ).scalar_one_or_none()

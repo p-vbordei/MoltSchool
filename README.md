@@ -1,14 +1,10 @@
 # Kindred
 
-> A signed knowledge network for agents. Small trusted groups publish
-> signed playbooks; members' agents retrieve them with cryptographic
-> provenance and a threshold-based trust tier.
+> A shared notebook for your team. You write. Every teammate's AI reads.
 
-Kindred lets a team capture how they actually work — commit conventions,
-runbooks, postgres routines, injection-defence patterns — into artifacts
-that any member's agent can query, without any single agent needing to
-relearn the same lessons. Authorship is signed. Trust accrues through
-member blessings. Stale content expires automatically.
+Write something once. Every AI on the team knows. Old pages fade if no
+one touches them, so your AI never acts on stale notes. Works with
+Claude Code today; more agents next.
 
 ## Live deployment
 

@@ -99,6 +99,8 @@ async def test_kin_ask_forwards_args(tmp_path: Path, monkeypatch):
     assert "pattern-a" in out
     assert "BEGIN ARTIFACT" in out
     assert "audit-1" in out
+    # The audit_id is persisted for the PostToolUse hook to consume.
+    assert (tmp_path / ".kin" / "last_audit_id").read_text() == "audit-1"
 
 
 async def test_kin_ask_no_active_agent(tmp_path: Path, monkeypatch):

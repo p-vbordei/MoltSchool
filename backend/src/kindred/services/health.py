@@ -181,15 +181,30 @@ async def compute_staleness_cost(
         a.payload.get("expired_shadow_hits", 0) or 0 for a in recent_asks
     )
 
+    all_cids: set[str] = set()
+    for a in recent_asks:
+        cids = a.payload.get("artifact_ids_returned", []) or []
+        all_cids.update(cids)
+
+    valid_until_by_cid: dict[str, datetime] = {}
+    if all_cids:
+        rows = (await session.execute(
+            select(Artifact.content_id, Artifact.valid_until).where(
+                Artifact.kindred_id == kindred_id,
+                Artifact.content_id.in_(all_cids),
+            )
+        )).all()
+        valid_until_by_cid = {cid: vu for cid, vu in rows}
+
     expiring_soon_hits = 0
     for a in recent_asks:
         cids = a.payload.get("artifact_ids_returned", []) or []
         if not cids:
             continue
-        arts = list((await session.execute(
-            select(Artifact).where(Artifact.content_id.in_(cids))
-        )).scalars())
-        if any(_as_utc(art.valid_until) <= soon for art in arts):
+        if any(
+            cid in valid_until_by_cid and _as_utc(valid_until_by_cid[cid]) <= soon
+            for cid in cids
+        ):
             expiring_soon_hits += 1
 
     return StalenessCost(

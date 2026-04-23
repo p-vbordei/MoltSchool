@@ -1,5 +1,10 @@
 """API tests for POST /v1/kindreds/{slug}/ask."""
+from uuid import UUID
+
+from sqlalchemy import select
+
 from kindred.crypto.keys import generate_keypair, pubkey_to_str, sign
+from kindred.models.audit import AuditLog
 from tests.api.helpers import (
     setup_user_agent_kindred,
     upload_artifact_via_api,
@@ -80,3 +85,40 @@ async def test_ask_filters_peer_shared_by_default(api_client):
     )
     assert r.status_code == 200, r.text
     assert len(r.json()["artifacts"]) == 1
+
+
+async def test_ask_audit_payload_includes_retrieval_metadata(api_client, api_test_deps):
+    """Audit payload records scores, tiers, and expired-shadow count per ask."""
+    fx = await setup_user_agent_kindred(
+        api_client, slug="askk5", bless_threshold=1, join_agent=True,
+    )
+    cid = await upload_artifact_via_api(api_client, fx, logical_name="commit-style")
+    # bless so it passes the class-blessed filter
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/artifacts/{cid}/bless",
+        json={"signer_pubkey": pubkey_to_str(fx.ag_pk),
+              "sig": sign(fx.ag_sk, cid.encode()).hex()},
+    )
+    assert r.status_code == 201, r.text
+
+    resp = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/ask",
+        json={"query": "how do I structure commits", "k": 3},
+        headers={"x-agent-pubkey": pubkey_to_str(fx.ag_pk)},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    audit_id = body["audit_id"]
+
+    # Load the audit row directly and assert payload shape.
+    factory = api_test_deps["factory"]
+    async with factory() as s:
+        audit = (await s.execute(
+            select(AuditLog).where(AuditLog.id == UUID(audit_id))
+        )).scalar_one()
+    p = audit.payload
+    assert "scores" in p and isinstance(p["scores"], list)
+    assert "tiers" in p and isinstance(p["tiers"], list)
+    assert "expired_shadow_hits" in p and isinstance(p["expired_shadow_hits"], int)
+    assert len(p["scores"]) == len(p["artifact_ids_returned"])
+    assert len(p["tiers"]) == len(p["artifact_ids_returned"])

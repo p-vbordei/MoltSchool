@@ -25,9 +25,9 @@ def kin_ask_tool() -> Tool:
     return Tool(
         name="kin_ask",
         description=(
-            "Query the team's Kindred grimoire for verified patterns. Returns "
-            "framed artifacts and provenance chips. Use whenever the user asks "
-            "a question that might have a team-specific answer."
+            "Ask the team's shared notebook a question. Returns the most "
+            "relevant pages with the teammate who wrote each one. Use whenever "
+            "the user asks something that might have a team-specific answer."
         ),
         inputSchema={
             "type": "object",
@@ -55,9 +55,9 @@ def kin_contribute_tool() -> Tool:
     return Tool(
         name="kin_contribute",
         description=(
-            "Upload a new artifact (pattern, CLAUDE.md snippet, routine) to the "
-            "user's kindred. Ask first before calling. Starts as peer-shared "
-            "until enough members bless it."
+            "Add a new page (pattern, CLAUDE.md snippet, routine) to the user's "
+            "shared notebook. Ask first before calling. Starts as a draft; other "
+            "teammates need to approve it before it's marked team-approved."
         ),
         inputSchema={
             "type": "object",

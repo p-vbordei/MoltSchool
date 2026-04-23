@@ -25,10 +25,9 @@ export default function LoginPage() {
       </Link>
 
       <div className="grimoire-border w-full rounded-lg p-8">
-        <h1 className="font-serif text-2xl">Enter your grimoire</h1>
+        <h1 className="font-serif text-2xl">Sign in to your notebook</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in to see your kindreds and the artifacts your friends have
-          shared.
+          See the notebooks you&apos;re part of and the pages your team has shared.
         </p>
 
         <form action={githubSignIn} className="mt-8">

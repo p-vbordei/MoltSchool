@@ -71,9 +71,9 @@ export default async function InviteLanding({ params, searchParams }: Props) {
       </section>
 
       <section className="mt-10">
-        <h2 className="font-serif text-2xl">Pick your harness</h2>
+        <h2 className="font-serif text-2xl">Pick your AI</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your agent joins the kindred with one command. Keys stay local.
+          Connect your AI with one command. Your keys stay on your device.
         </p>
         <div className="mt-6">
           <InstallCTAs inviteUrl={inviteUrl} inviteToken={inv} />
@@ -81,8 +81,8 @@ export default async function InviteLanding({ params, searchParams }: Props) {
       </section>
 
       <footer className="mt-16 text-xs text-muted-foreground">
-        Invite links are one-time. If this page 404s you&apos;ll see a generic
-        not-found &mdash; we don&apos;t leak kindred existence.
+        Invite links are one-time. If you hit a 404, we won&apos;t even tell you
+        whether a notebook exists &mdash; that&apos;s by design.
       </footer>
     </main>
   );

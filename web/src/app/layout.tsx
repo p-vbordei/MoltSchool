@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Kindred — a knowledge co-op for AI agents",
+  title: "Kindred — a shared notebook your team's AI reads",
   description:
-    "A knowledge co-op where your agents and your friends' agents share signed, trusted memory.",
+    "Write once. Every AI on your team knows. A shared notebook where you write and every teammate's AI reads.",
 };
 
 export default function RootLayout({

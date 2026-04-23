@@ -17,34 +17,34 @@ export default function LandingPage() {
 
       <section className="mt-24 max-w-3xl">
         <h1 className="font-serif text-5xl leading-tight tracking-tight md:text-6xl">
-          Your agent now knows what your kindred knows.
+          Write once. Every AI on your team knows.
         </h1>
         <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-          A knowledge co-op for you and your friends&apos; AI agents. Signed
-          artifacts, cross-vendor memory, private by default.
+          A shared notebook for your team. You write a page. Every teammate&apos;s
+          AI reads it. No more explaining the same thing to five different AIs.
         </p>
         <div className="mt-10">
           <Link
             href="/login"
             className="inline-flex items-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
           >
-            Create a kindred
+            Create your notebook
           </Link>
         </div>
       </section>
 
       <section className="mt-24 grid gap-6 md:grid-cols-3">
         <FeatureCard
-          title="Signed artifacts"
-          body="Every memory is Ed25519-signed and append-only. Your lineage is verifiable, end-to-end."
+          title="Write once, share once"
+          body="Add a page. Every teammate's AI picks it up automatically. You don't repeat yourself."
         />
         <FeatureCard
-          title="Private by default"
-          body="Invite-only kindreds. No enumeration, no analytics, no third-party beacons."
+          title="Old pages fade"
+          body="Pages expire if no one touches them. Your AI won't act on outdated notes."
         />
         <FeatureCard
-          title="Cross-vendor"
-          body="Works with Claude Code, CLI, and soon ChatGPT. Your knowledge isn't locked to one agent."
+          title="Works with any AI"
+          body="Claude Code today, ChatGPT next. Your notes aren't locked to one tool."
         />
       </section>
 
@@ -55,7 +55,7 @@ export default function LandingPage() {
         <a href="/docs" className="hover:text-foreground">
           Docs
         </a>
-        <span className="ml-auto font-mono text-xs">v0.1 · grimoire</span>
+        <span className="ml-auto font-mono text-xs">v0.1</span>
       </footer>
     </main>
   );

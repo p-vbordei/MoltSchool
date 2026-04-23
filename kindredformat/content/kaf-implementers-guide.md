@@ -180,6 +180,26 @@ Sign the message `sha256:0000000000000000000000000000000000000000000000000000000
 (UTF-8, 71 bytes). The resulting 64-byte signature (hex) is the expected
 author_sig for that `content_id`.
 
+### Vector 5b — targets field (additive, §3.3)
+
+Input metadata:
+
+```json
+{"targets":["claude-code","mcp-generic"]}
+```
+
+Canonical bytes (exact, 41 bytes, UTF-8):
+
+```
+{"targets":["claude-code","mcp-generic"]}
+```
+
+`content_id = "sha256:d87ca55fd228185f930ea4d0a85fe39e1eba17ccc3cd59805cdbf3c447fb1fa8"`
+
+An old reader MUST ignore the unknown `targets` field (§11). Its presence
+or absence does not change signature verification semantics; it is a
+discovery signal only.
+
 ### Vector 5 — blessing adds to same content_id
 
 Given a valid envelope from Vector 3 and a second Ed25519 keypair,
@@ -241,7 +261,8 @@ write(type, logical_name, author_sk, author_pk, body_bytes, validity_days, tags=
 A KAF 0.1 implementation is conformant if:
 
 - It produces bit-identical `content_id` values to the reference
-  Python implementation for the 5 test vectors.
+  Python implementation for all test vectors in
+  `backend/tests/kaf/vectors.json`.
 - Its signatures verify with the reference, and the reference's
   signatures verify with it.
 - It rejects envelopes with `kaf_version != "0.1"`, invalid signatures,

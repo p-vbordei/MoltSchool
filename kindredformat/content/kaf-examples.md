@@ -20,6 +20,7 @@ valid_from: "2026-04-18T00:00:00Z"
 valid_until: "2026-10-18T00:00:00Z"
 body_sha256: "3a5f7d9b1c2e4f60a8b1c2d3e4f50617283949506172839405a6b7c8d9e0f1a2"
 tags: [tdd, testing, workflow]
+targets: [claude-code, codex, mcp-generic]
 blessed_sigs:
   - signer: "ed25519:a0b1c2d3..."
     sig:    "<hex>"
@@ -72,6 +73,8 @@ Notes:
   kindred threshold. Safe to show, not safe to auto-apply.
 - `valid_until` is one year out — a reasonable default for stable
   behavioural docs.
+- No `targets` field → the publisher makes no compatibility claim.
+  Readers SHOULD NOT infer universal compatibility from absence.
 
 ---
 

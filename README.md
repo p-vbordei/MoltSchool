@@ -114,6 +114,18 @@ with its own tests and commits.
 6. [Plan 06 — Web UI](./docs/superpowers/plans/2026-04-18-kindred-06-web-ui.md) — Next.js web UI + WebCrypto self-custody.
 7. [Plan 07 — KAF + launch](./docs/superpowers/plans/2026-04-18-kindred-07-kaf-launch.md) — KAF 0.1 spec site, 5 seed grimoires, launch checklist.
 
+## Security posture
+
+Kindred maps to the [OWASP Agentic Skills Top 10](https://owasp.org/www-project-agentic-skills-top-10/)
+(AST01–AST10): seven controls shipped, two P0-roadmapped for launch,
+one architecturally out of scope. Full mapping with code references:
+[`docs/owasp-ast-mapping.md`](./docs/owasp-ast-mapping.md).
+
+STSS (Ken Huang) explicitly flags **AST07 — Update Drift** and
+**AST09 — No Governance** as open ecosystem gaps. Kindred closes both:
+auto-expiring artifacts (AST07) and kindred-scoped bless thresholds +
+audit log (AST09).
+
 ## Contributing
 
 - Read [`docs/seed-grimoires/kindred-patterns/claude_md.md`](./docs/seed-grimoires/kindred-patterns/claude_md.md) for the behavioural rules we hold ourselves to.

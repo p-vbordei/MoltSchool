@@ -29,7 +29,7 @@ _SUCCESS_VALUES = {OutcomeResult.SUCCESS, OutcomeResult.PARTIAL}
 
 async def report_outcome(
     session: AsyncSession, *, audit_id: UUID, result: str | OutcomeResult,
-    notes: str = "",
+    notes: str = "", chosen_content_id: str | None = None,
 ) -> None:
     """Credit each returned artifact for an earlier /ask call.
 
@@ -49,6 +49,12 @@ async def report_outcome(
         raise NotFoundError(f"audit {audit_id} not found")
 
     cids: list[str] = list(audit.payload.get("artifact_ids_returned", []) or [])
+
+    if chosen_content_id is not None and chosen_content_id not in cids:
+        raise ValidationError(
+            f"chosen_content_id {chosen_content_id!r} was not in audit's returned set"
+        )
+
     is_success = parsed in _SUCCESS_VALUES
     for cid in cids:
         stmt = (
@@ -68,6 +74,8 @@ async def report_outcome(
             "result": parsed.value,
             "notes": notes,
             "artifact_ids": cids,
+            "chosen_content_id": chosen_content_id,
+            "rank_of_chosen": cids.index(chosen_content_id) if chosen_content_id else None,
         },
     )
     await session.flush()

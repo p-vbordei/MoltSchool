@@ -47,23 +47,44 @@ async def retrieve_top_k(
     provider: EmbeddingProvider,
     k: int = 5,
     include_expired: bool = False,
-) -> list[tuple[Artifact, float]]:
-    """Return up to `k` (artifact, similarity) pairs sorted by desc similarity.
+) -> tuple[list[tuple[Artifact, float]], int]:
+    """Return ((artifact, similarity) top-K, expired_shadow_count).
+
+    expired_shadow_count: count of artefacts that WOULD have been in the top-K
+    if the expiry filter were disabled. Zero when include_expired=True. Powers
+    the staleness-cost telemetry — the "opportunity cost" of filtering expired
+    knowledge.
 
     Applies validity-window filter (I6) so expired artefacts never bubble up to
     the caller unless explicitly requested (e.g. rollback tooling).
     """
     query_vec = await provider.embed(query)
+    now = datetime.now(UTC)
 
+    # Load all artefacts regardless of expiry — we're already scanning the full
+    # corpus in Python (cosine), so filtering is free.
     stmt = select(Artifact).where(Artifact.kindred_id == kindred_id)
-    if not include_expired:
-        stmt = stmt.where(Artifact.valid_until > datetime.now(UTC))
     artifacts = list((await session.execute(stmt)).scalars())
 
-    scored: list[tuple[Artifact, float]] = []
+    scored_all: list[tuple[Artifact, float]] = []
     for art in artifacts:
         if art.embedding is None:
             continue
-        scored.append((art, _cosine(query_vec, art.embedding)))
-    scored.sort(key=lambda p: p[1], reverse=True)
-    return scored[:k]
+        scored_all.append((art, _cosine(query_vec, art.embedding)))
+    scored_all.sort(key=lambda p: p[1], reverse=True)
+
+    if include_expired:
+        return scored_all[:k], 0
+
+    def _expired(a: Artifact) -> bool:
+        # SQLite in tests drops tzinfo even for timezone=True columns — treat
+        # naive datetimes as UTC so comparison with tz-aware `now` works.
+        vu = a.valid_until
+        if vu.tzinfo is None:
+            vu = vu.replace(tzinfo=UTC)
+        return vu <= now
+
+    top_k_with_expired = scored_all[:k]
+    expired_shadow = sum(1 for a, _ in top_k_with_expired if _expired(a))
+    scored_fresh = [(a, s) for a, s in scored_all if not _expired(a)][:k]
+    return scored_fresh, expired_shadow

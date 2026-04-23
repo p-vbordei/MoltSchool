@@ -181,8 +181,6 @@ async def test_install_rate_limit_enforced_by_ip():
     app.dependency_overrides[get_settings] = _settings
 
     # Seed a public kindred directly.
-    from uuid import uuid4
-
     from kindred.models.kindred import Kindred
     from kindred.models.user import User
 

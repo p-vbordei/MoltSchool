@@ -94,6 +94,7 @@ async def test_retrieval_utility_success_rate_and_mrr(db_session):
 async def _seed_agent_with_join_and_success(db_session, kindred, *, join_at, success_at):
     """Create a User+Agent+Membership+Ask+Outcome chain with controlled timestamps."""
     from datetime import UTC, datetime
+
     from kindred.models.agent import Agent
     from kindred.models.audit import AuditLog
     from kindred.models.event import Event
@@ -161,6 +162,7 @@ async def _seed_agent_with_join_and_success(db_session, kindred, *, join_at, suc
 async def _seed_agent_join_only(db_session, kindred, *, join_at):
     """Agent joins but never reports a success — should be excluded from TTFUR sample."""
     from datetime import UTC, datetime
+
     from kindred.models.agent import Agent
     from kindred.models.membership import AgentKindredMembership
     from kindred.models.user import User
@@ -192,7 +194,7 @@ async def _seed_agent_join_only(db_session, kindred, *, join_at):
 
 
 async def test_ttfur_measures_join_to_first_success(db_session):
-    """TTFUR = first success timestamp − agent membership created_at, per agent
+    """TTFUR = first success timestamp - agent membership created_at, per agent
     that has both. Report p50/p90 over the sample of agents with successes."""
     from datetime import UTC, datetime, timedelta
     setup = await make_full_setup(db_session, slug="ttfur-test")
@@ -223,6 +225,7 @@ async def test_ttfur_measures_join_to_first_success(db_session):
 
 async def _seed_artifact(db_session, kindred, *, created_at):
     from datetime import timedelta
+
     from kindred.models.artifact import Artifact
     art = Artifact(
         content_id=f"ART-{uuid4().hex[:8]}",
@@ -257,7 +260,7 @@ async def _seed_blessing(db_session, artifact, *, signer_agent_id, created_at):
 
 async def test_trust_propagation_measures_publish_to_tier_promotion(db_session):
     """For each artifact whose blessings reached threshold, compute
-    (nth_blessing.created_at − artifact.created_at) where n = threshold."""
+    (nth_blessing.created_at - artifact.created_at) where n = threshold."""
     from datetime import UTC, datetime, timedelta
     setup = await make_full_setup(db_session, slug="trust-prop-test")
     kindred = setup["kindred"]
@@ -294,6 +297,7 @@ async def test_staleness_cost_sums_shadow_and_expiring_soon(db_session):
     expiring_soon_hits_last_7d: asks where any returned artifact has valid_until
     within the next 7 days."""
     from datetime import UTC, datetime, timedelta
+
     from kindred.models.audit import AuditLog
     setup = await make_full_setup(db_session, slug="staleness-test")
     kindred = setup["kindred"]

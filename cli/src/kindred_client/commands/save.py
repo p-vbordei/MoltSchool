@@ -45,7 +45,7 @@ async def _run_save() -> str | None:
     api = KindredAPI(cfg.backend_url)
     await api.report_outcome(
         audit_id=audit_id, result="success",
-        notes=data.get("output_snippet", "")[:200],
+        notes=(data.get("output_snippet") or "")[:200],
     )
     entry.rename(entry.with_suffix(".json.consumed"))
     return audit_id

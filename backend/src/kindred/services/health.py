@@ -6,13 +6,18 @@ only aggregate counts and percentiles.
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from kindred.api.schemas.health import RetrievalUtility, TTFUR, TrustPropagation
+from kindred.api.schemas.health import (
+    RetrievalUtility,
+    StalenessCost,
+    TTFUR,
+    TrustPropagation,
+)
 from kindred.facilitator.outcomes import SUCCESS_RESULTS
 from kindred.models.agent import Agent
 from kindred.models.artifact import Artifact, Blessing
@@ -151,4 +156,43 @@ async def compute_trust_propagation(
         promoted_artifacts=len(deltas),
         p50_seconds=_percentile(deltas, 0.5),
         p90_seconds=_percentile(deltas, 0.9),
+    )
+
+
+async def compute_staleness_cost(
+    session: AsyncSession, *, kindred_id: UUID,
+) -> StalenessCost:
+    """Sum of ``expired_shadow_hits`` in /ask audits from the last 7 days,
+    plus count of those asks whose returned artifacts include at least one
+    that expires within the next 7 days."""
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(days=7)
+    soon = now + timedelta(days=7)
+
+    recent_asks = list((await session.execute(
+        select(AuditLog).where(
+            AuditLog.kindred_id == kindred_id,
+            AuditLog.action == "ask",
+            AuditLog.created_at >= cutoff,
+        )
+    )).scalars())
+
+    shadow_hits = sum(
+        a.payload.get("expired_shadow_hits", 0) or 0 for a in recent_asks
+    )
+
+    expiring_soon_hits = 0
+    for a in recent_asks:
+        cids = a.payload.get("artifact_ids_returned", []) or []
+        if not cids:
+            continue
+        arts = list((await session.execute(
+            select(Artifact).where(Artifact.content_id.in_(cids))
+        )).scalars())
+        if any(_as_utc(art.valid_until) <= soon for art in arts):
+            expiring_soon_hits += 1
+
+    return StalenessCost(
+        shadow_hits_last_7d=shadow_hits,
+        expiring_soon_hits_last_7d=expiring_soon_hits,
     )

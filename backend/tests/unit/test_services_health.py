@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from kindred.services.health import (
     compute_retrieval_utility,
+    compute_staleness_cost,
     compute_trust_propagation,
     compute_ttfur,
 )
@@ -286,3 +287,71 @@ async def test_trust_propagation_measures_publish_to_tier_promotion(db_session):
     assert result.p50_seconds is not None
     assert 55.0 <= result.p50_seconds <= 305.0
     assert result.p90_seconds is not None
+
+
+async def test_staleness_cost_sums_shadow_and_expiring_soon(db_session):
+    """shadow_hits_last_7d: sum of payload.expired_shadow_hits for recent asks.
+    expiring_soon_hits_last_7d: asks where any returned artifact has valid_until
+    within the next 7 days."""
+    from datetime import UTC, datetime, timedelta
+    from kindred.models.audit import AuditLog
+    setup = await make_full_setup(db_session, slug="staleness-test")
+    kindred = setup["kindred"]
+    ag_pk = setup["ag_pk"]
+    now = datetime.now(UTC)
+
+    # ask 1 (recent, 2 shadow hits, returned artifact expires in 90d — not soon)
+    art_long = await _seed_artifact(
+        db_session, kindred, created_at=now - timedelta(days=1),
+    )
+    art_long.valid_until = now + timedelta(days=90)
+    await db_session.flush()
+    ask1 = AuditLog(
+        kindred_id=kindred.id, agent_pubkey=ag_pk, action="ask",
+        payload={
+            "query": "q", "artifact_ids_returned": [art_long.content_id],
+            "scores": [0.8], "tiers": ["peer-shared"], "k": 1,
+            "expired_shadow_hits": 2, "blocked_injection": False,
+        },
+        facilitator_sig=b"x" * 64, seq=await _next_audit_seq(db_session, kindred.id),
+    )
+    ask1.created_at = now - timedelta(days=1)
+    db_session.add(ask1)
+    await db_session.flush()
+
+    # ask 2 (recent, 0 shadow, returned artifact expires in 3 days — soon)
+    art_soon = await _seed_artifact(
+        db_session, kindred, created_at=now - timedelta(days=1),
+    )
+    art_soon.valid_until = now + timedelta(days=3)
+    await db_session.flush()
+    ask2 = AuditLog(
+        kindred_id=kindred.id, agent_pubkey=ag_pk, action="ask",
+        payload={
+            "query": "q", "artifact_ids_returned": [art_soon.content_id],
+            "scores": [0.8], "tiers": ["peer-shared"], "k": 1,
+            "expired_shadow_hits": 0, "blocked_injection": False,
+        },
+        facilitator_sig=b"x" * 64, seq=await _next_audit_seq(db_session, kindred.id),
+    )
+    ask2.created_at = now - timedelta(hours=2)
+    db_session.add(ask2)
+    await db_session.flush()
+
+    # ask 3 (10 days old — excluded from 7d window)
+    ask3 = AuditLog(
+        kindred_id=kindred.id, agent_pubkey=ag_pk, action="ask",
+        payload={
+            "query": "q", "artifact_ids_returned": [art_long.content_id],
+            "scores": [0.8], "tiers": ["peer-shared"], "k": 1,
+            "expired_shadow_hits": 5, "blocked_injection": False,
+        },
+        facilitator_sig=b"x" * 64, seq=await _next_audit_seq(db_session, kindred.id),
+    )
+    ask3.created_at = now - timedelta(days=10)
+    db_session.add(ask3)
+    await db_session.flush()
+
+    result = await compute_staleness_cost(db_session, kindred_id=kindred.id)
+    assert result.shadow_hits_last_7d == 2        # ask1 contributes 2; ask3 excluded
+    assert result.expiring_soon_hits_last_7d == 1 # only ask2

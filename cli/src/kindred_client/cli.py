@@ -8,6 +8,7 @@ from kindred_client.commands import contribute as contribute_cmd
 from kindred_client.commands import install as install_cmd
 from kindred_client.commands import join as join_cmd
 from kindred_client.commands import leave as leave_cmd
+from kindred_client.commands import report as report_cmd
 from kindred_client.commands import save as save_cmd
 from kindred_client.commands import status as status_cmd
 
@@ -29,6 +30,7 @@ install_cmd.register(app)
 ask_cmd.register(app)
 contribute_cmd.register(app)
 save_cmd.register(app)
+report_cmd.register(app)
 status_cmd.register(app)
 leave_cmd.register(app)
 

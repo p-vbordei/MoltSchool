@@ -1,7 +1,7 @@
 # Kindred Artifact Format (KAF) 0.1
 
 **Status:** Draft — stable for MVP, may receive additive minor revisions.
-**Publication date:** 2026-04-18
+**Publication date:** 2026-04-23 (additive revision: `targets` field added to envelope §3; see §3.3).
 **Canonical URL:** https://kindredformat.org
 **Reference implementation:** https://github.com/kindred/kindred
 
@@ -113,6 +113,7 @@ Optional fields:
 | `outcome_stats`  | OutcomeStats      | Aggregate use telemetry (§8)                    |
 | `test_harness`   | string            | Reference to a harness that verifies the body   |
 | `superseded_by`  | string            | `content_id` of the replacement artifact        |
+| `targets`        | list[string]      | Agent runtimes this artifact is tested against (§3.3) |
 
 ### 3.1 BlessedSig
 
@@ -140,6 +141,32 @@ the secret key corresponding to `signer`.
 
 All counters MUST be non-negative integers. `outcome_stats` is advisory;
 readers MAY use it for ranking but MUST NOT use it as a trust signal.
+
+### 3.3 Targets
+
+`targets` is an OPTIONAL list of stable runtime identifiers that the
+publisher has tested the artifact against. It is a discovery signal, not
+an authorisation signal — a reader MAY filter retrieval by runtime match,
+but MUST NOT treat the presence or absence of a target as a trust or
+policy gate.
+
+KAF 0.1 reserves the following runtime identifiers:
+
+| Identifier     | Meaning                                                      |
+|----------------|--------------------------------------------------------------|
+| `claude-code`  | Anthropic Claude Code CLI + its MCP/skill/hook plugin model  |
+| `codex`        | OpenAI Codex CLI                                             |
+| `cursor`       | Cursor IDE (Anysphere)                                       |
+| `gemini-cli`   | Google Gemini CLI                                            |
+| `mcp-generic`  | Any Model Context Protocol client — no runtime-specific hook |
+
+Writers MAY include additional identifiers; readers MUST ignore unknown
+identifiers. Each entry MUST be a non-empty ASCII string of
+`[a-z0-9][a-z0-9-]*`. Duplicate entries MUST be rejected.
+
+An empty `targets` list is equivalent to omitting the field (no declared
+compatibility). Omitting `targets` means the publisher makes no claim —
+readers SHOULD NOT infer universal compatibility from absence.
 
 ## 4. Canonical JSON
 

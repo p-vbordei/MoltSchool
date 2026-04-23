@@ -61,6 +61,20 @@
       "expected_content_id": "sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
     },
     {
+      "id": "v6",
+      "description": "targets list (additive KAF field, §3.3) - canonical bytes stable",
+      "input_type": "dict",
+      "input": {
+        "targets": [
+          "claude-code",
+          "mcp-generic"
+        ]
+      },
+      "expected_canonical_json_hex": "7b2274617267657473223a5b22636c617564652d636f6465222c226d63702d67656e65726963225d7d",
+      "expected_canonical_json_utf8": "{\"targets\":[\"claude-code\",\"mcp-generic\"]}",
+      "expected_content_id": "sha256:d87ca55fd228185f930ea4d0a85fe39e1eba17ccc3cd59805cdbf3c447fb1fa8"
+    },
+    {
       "id": "sig_v1",
       "description": "ed25519 sign of v5 content_id with sk=00*32",
       "secret_key_hex": "0000000000000000000000000000000000000000000000000000000000000000",

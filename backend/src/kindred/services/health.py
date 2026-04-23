@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from kindred.api.schemas.health import RetrievalUtility
+from kindred.facilitator.outcomes import SUCCESS_RESULTS
 from kindred.models.audit import AuditLog
 from kindred.models.event import Event
 
@@ -40,7 +41,7 @@ async def compute_retrieval_utility(
     )
     outcomes = list((await session.execute(outcomes_q)).scalars())
 
-    successes = [o for o in outcomes if o.payload.get("result") in ("success", "partial")]
+    successes = [o for o in outcomes if o.payload.get("result") in SUCCESS_RESULTS]
     ranks = [o.payload["rank_of_chosen"] for o in successes
              if o.payload.get("rank_of_chosen") is not None]
 

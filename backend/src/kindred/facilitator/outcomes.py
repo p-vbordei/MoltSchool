@@ -24,7 +24,7 @@ class OutcomeResult(StrEnum):
     OVERRIDDEN = "overridden"
 
 
-_SUCCESS_VALUES = {OutcomeResult.SUCCESS, OutcomeResult.PARTIAL}
+SUCCESS_RESULTS: frozenset[str] = frozenset({OutcomeResult.SUCCESS.value, OutcomeResult.PARTIAL.value})
 
 
 async def report_outcome(
@@ -55,7 +55,7 @@ async def report_outcome(
             f"chosen_content_id {chosen_content_id!r} was not in audit's returned set"
         )
 
-    is_success = parsed in _SUCCESS_VALUES
+    is_success = parsed.value in SUCCESS_RESULTS
     for cid in cids:
         stmt = (
             update(Artifact)

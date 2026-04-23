@@ -1,7 +1,6 @@
 """Unit tests for kindred.services.health — each indicator in isolation."""
 from __future__ import annotations
 
-import pytest
 from sqlalchemy import func, select
 
 from kindred.services.health import compute_retrieval_utility
@@ -64,7 +63,6 @@ async def _seed_ask_without_outcome(db_session, kindred, ag_pk, cids):
     return audit
 
 
-@pytest.mark.asyncio
 async def test_retrieval_utility_success_rate_and_mrr(db_session):
     """Computes: total_asks, total_outcomes, success_rate, mean_rank_of_chosen."""
     setup = await make_full_setup(db_session, slug="rt-util")

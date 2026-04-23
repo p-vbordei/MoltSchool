@@ -13,9 +13,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from kindred.api.schemas.health import (
+    TTFUR,
     RetrievalUtility,
     StalenessCost,
-    TTFUR,
     TrustPropagation,
 )
 from kindred.facilitator.outcomes import SUCCESS_RESULTS
@@ -30,7 +30,7 @@ def _percentile(values: list[float], q: float) -> float | None:
     if not values:
         return None
     ordered = sorted(values)
-    idx = max(0, min(len(ordered) - 1, int(round(q * (len(ordered) - 1)))))
+    idx = max(0, min(len(ordered) - 1, round(q * (len(ordered) - 1))))
     return ordered[idx]
 
 

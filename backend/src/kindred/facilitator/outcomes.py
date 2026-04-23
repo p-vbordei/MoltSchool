@@ -24,7 +24,9 @@ class OutcomeResult(StrEnum):
     OVERRIDDEN = "overridden"
 
 
-SUCCESS_RESULTS: frozenset[str] = frozenset({OutcomeResult.SUCCESS.value, OutcomeResult.PARTIAL.value})
+SUCCESS_RESULTS: frozenset[str] = frozenset(
+    {OutcomeResult.SUCCESS.value, OutcomeResult.PARTIAL.value}
+)
 
 
 async def report_outcome(

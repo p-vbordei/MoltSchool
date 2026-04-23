@@ -63,32 +63,45 @@ if [[ -z "$INVITE_URL" ]]; then
     ok "minted invite: $INVITE_URL"
 fi
 
-# --- Benchmark -------------------------------------------------------------
-
-START="$(date +%s)"
+# --- Preamble: install CLI (not part of TTFUR wall-clock) -----------------
 
 pip install --quiet --disable-pip-version-check "$REPO/cli" >/dev/null \
     || die "pip install of local cli failed"
 ok "installed cli from $REPO/cli"
 
+# --- TTFUR wall-clock: join -> ask -> report success ----------------------
+
+START_NS=$(date +%s%N)
+
 kin join "$INVITE_URL" --email "bench@kindred.local" --name "Bench User" \
     || die "kin join failed"
 ok "joined kindred"
 
-kin ask "$KINDRED_SLUG" "tdd workflow" --k 1 \
+ASK_JSON=$(kin ask "$KINDRED_SLUG" "tdd workflow" --k 1 --json) \
     || die "kin ask failed"
-ok "first ask returned"
 
-END="$(date +%s)"
-ELAPSED=$(( END - START ))
+AUDIT_ID=$(python3 -c "import json,sys; print(json.loads(sys.stdin.read())['audit_id'])" <<<"$ASK_JSON")
+CHOSEN_CID=$(python3 -c "import json,sys; arts=json.loads(sys.stdin.read()).get('artifacts') or []; print(arts[0]['content_id'] if arts else '')" <<<"$ASK_JSON")
+
+if [[ -z "$CHOSEN_CID" ]]; then
+    die "ask returned no artifacts — nothing to report"
+fi
+
+kin report "$AUDIT_ID" success --chose "$CHOSEN_CID" \
+    || die "kin report failed"
+ok "reported outcome=success"
+
+END_NS=$(date +%s%N)
+ELAPSED_MS=$(( (END_NS - START_NS) / 1000000 ))
+ELAPSED_S=$(( ELAPSED_MS / 1000 ))
 
 echo ""
 echo "================================================"
-echo "  Onboarding elapsed: ${ELAPSED}s  (budget ${BUDGET_SECONDS}s)"
+echo "  TTFUR: ${ELAPSED_MS}ms (${ELAPSED_S}s)  (budget ${BUDGET_SECONDS}s)"
 echo "================================================"
 
-if (( ELAPSED > BUDGET_SECONDS )); then
-    echo "FAIL: onboarding exceeded budget"
+if (( ELAPSED_S > BUDGET_SECONDS )); then
+    echo "FAIL: TTFUR exceeded budget"
     exit 1
 fi
 

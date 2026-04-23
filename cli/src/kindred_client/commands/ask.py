@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 import typer
 from rich.console import Console
@@ -66,6 +67,9 @@ def register(app: typer.Typer) -> None:
         peer_shared: bool = typer.Option(
             False, "--peer-shared", help="Include peer-shared (unsigned) artifacts"
         ),
+        json_out: bool = typer.Option(
+            False, "--json", help="Print response as JSON instead of framed panels"
+        ),
     ) -> None:
         """Ask your team's shared notebook and print the most relevant pages with provenance."""
         try:
@@ -88,4 +92,7 @@ def register(app: typer.Typer) -> None:
             )
             raise typer.Exit(code=2) from e
 
-        _render_response(resp)
+        if json_out:
+            print(json.dumps(resp))
+        else:
+            _render_response(resp)

@@ -65,3 +65,62 @@ async def test_outcome_invalid_result_400(api_client):
         json={"audit_id": audit_id, "result": "not-a-real-result"},
     )
     assert r.status_code == 400
+
+
+async def test_outcome_with_chosen_content_id_ok(api_client):
+    fx = await setup_user_agent_kindred(
+        api_client, slug="outchose", bless_threshold=1, join_agent=True,
+    )
+    cid = await upload_artifact_via_api(api_client, fx, logical_name="pg-bloat")
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/artifacts/{cid}/bless",
+        json={"signer_pubkey": pubkey_to_str(fx.ag_pk),
+              "sig": sign(fx.ag_sk, cid.encode()).hex()},
+    )
+    assert r.status_code == 201, r.text
+
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/ask",
+        json={"query": "pg-bloat vacuum"},
+        headers={"x-agent-pubkey": pubkey_to_str(fx.ag_pk)},
+    )
+    assert r.status_code == 200, r.text
+    audit_id = r.json()["audit_id"]
+
+    r = await api_client.post(
+        "/v1/ask/outcome",
+        json={"audit_id": audit_id, "result": "success", "chosen_content_id": cid},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json() == {"ok": True}
+
+
+async def test_outcome_chosen_content_id_not_in_set_400(api_client):
+    fx = await setup_user_agent_kindred(
+        api_client, slug="outchosebad", bless_threshold=1, join_agent=True,
+    )
+    cid = await upload_artifact_via_api(api_client, fx, logical_name="pg-bloat")
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/artifacts/{cid}/bless",
+        json={"signer_pubkey": pubkey_to_str(fx.ag_pk),
+              "sig": sign(fx.ag_sk, cid.encode()).hex()},
+    )
+    assert r.status_code == 201, r.text
+
+    r = await api_client.post(
+        f"/v1/kindreds/{fx.slug}/ask",
+        json={"query": "pg-bloat vacuum"},
+        headers={"x-agent-pubkey": pubkey_to_str(fx.ag_pk)},
+    )
+    assert r.status_code == 200, r.text
+    audit_id = r.json()["audit_id"]
+
+    r = await api_client.post(
+        "/v1/ask/outcome",
+        json={
+            "audit_id": audit_id,
+            "result": "success",
+            "chosen_content_id": "ART-not-in-set",
+        },
+    )
+    assert r.status_code == 400

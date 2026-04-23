@@ -1,10 +1,12 @@
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
 
 from kindred.config import Settings
 from kindred.errors import NotFoundError, ValidationError
 from kindred.facilitator.outcomes import OutcomeResult, report_outcome
+from kindred.models.event import Event
 from kindred.services.audit import append_audit
 from tests.helpers import make_full_setup
 
@@ -81,3 +83,65 @@ async def test_report_outcome_invalid_result_raises(db_session):
         await report_outcome(
             db_session, audit_id=audit.id, result="garbage",
         )
+
+
+@pytest.mark.asyncio
+async def test_report_outcome_with_chosen_content_id(db_session):
+    setup = await make_full_setup(db_session)
+    audit = await append_audit(
+        db_session, kindred_id=setup["kindred"].id, agent_pubkey=setup["ag_pk"],
+        action="ask",
+        payload={"artifact_ids_returned": ["cid-X", "cid-Y", "cid-Z"], "query": "q"},
+        facilitator_sk=Settings().facilitator_signing_key,
+    )
+    await report_outcome(
+        db_session, audit_id=audit.id, result="success", chosen_content_id="cid-Y",
+    )
+    ev = (
+        await db_session.execute(
+            select(Event)
+            .where(Event.kindred_id == setup["kindred"].id)
+            .where(Event.event_type == "outcome_reported")
+        )
+    ).scalar_one()
+    assert ev.payload["chosen_content_id"] == "cid-Y"
+    assert ev.payload["rank_of_chosen"] == 1
+
+
+@pytest.mark.asyncio
+async def test_report_outcome_chosen_not_in_returned_set_raises(db_session):
+    setup = await make_full_setup(db_session)
+    art = setup["art"]
+    audit = await append_audit(
+        db_session, kindred_id=setup["kindred"].id, agent_pubkey=setup["ag_pk"],
+        action="ask", payload={"artifact_ids_returned": [art.content_id], "query": "q"},
+        facilitator_sk=Settings().facilitator_signing_key,
+    )
+    with pytest.raises(ValidationError):
+        await report_outcome(
+            db_session, audit_id=audit.id, result="success",
+            chosen_content_id="not-in-set",
+        )
+
+
+@pytest.mark.asyncio
+async def test_report_outcome_without_chosen_records_none(db_session):
+    setup = await make_full_setup(db_session)
+    art = setup["art"]
+    audit = await append_audit(
+        db_session, kindred_id=setup["kindred"].id, agent_pubkey=setup["ag_pk"],
+        action="ask", payload={"artifact_ids_returned": [art.content_id], "query": "q"},
+        facilitator_sk=Settings().facilitator_signing_key,
+    )
+    await report_outcome(
+        db_session, audit_id=audit.id, result=OutcomeResult.SUCCESS,
+    )
+    ev = (
+        await db_session.execute(
+            select(Event)
+            .where(Event.kindred_id == setup["kindred"].id)
+            .where(Event.event_type == "outcome_reported")
+        )
+    ).scalar_one()
+    assert ev.payload["chosen_content_id"] is None
+    assert ev.payload["rank_of_chosen"] is None

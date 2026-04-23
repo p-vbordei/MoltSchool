@@ -243,9 +243,15 @@ class KindredAPI:
             headers={"x-agent-pubkey": crypto.pubkey_to_str(agent_pubkey)},
         )
 
-    async def report_outcome(self, *, audit_id: str, result: str, notes: str = "") -> dict:
+    async def report_outcome(
+        self, *, audit_id: str, result: str, notes: str = "",
+        chosen_content_id: str | None = None,
+    ) -> dict:
         return await self._request(
             "POST",
             "/v1/ask/outcome",
-            json={"audit_id": audit_id, "result": result, "notes": notes},
+            json={
+                "audit_id": audit_id, "result": result, "notes": notes,
+                "chosen_content_id": chosen_content_id,
+            },
         )

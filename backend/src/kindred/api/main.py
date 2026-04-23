@@ -11,6 +11,7 @@ from kindred.api.routers import (
     invites,
     kindreds,
     memberships,
+    network_health,
     outcomes,
     users,
 )
@@ -30,6 +31,7 @@ app.include_router(health.router)
 app.include_router(users.router, prefix="/v1/users", tags=["users"])
 app.include_router(agents.router, prefix="/v1/users", tags=["agents"])
 app.include_router(kindreds.router, prefix="/v1/kindreds", tags=["kindreds"])
+app.include_router(network_health.router, prefix="/v1/kindreds", tags=["health"])
 app.include_router(artifacts.router, prefix="/v1/kindreds", tags=["artifacts"])
 app.include_router(invites.router, prefix="/v1/kindreds", tags=["invites"])
 app.include_router(memberships.router, prefix="/v1", tags=["memberships"])

@@ -35,6 +35,32 @@ export type AuditEvent = {
   payload?: Record<string, unknown>;
 };
 
+export type KindredHealth = {
+  kindred_slug: string;
+  generated_at: string;
+  retrieval_utility: {
+    total_asks: number;
+    total_outcomes: number;
+    success_rate: number;
+    mean_rank_of_chosen: number;
+    top1_precision: number;
+  };
+  ttfur: {
+    sample_size: number;
+    p50_seconds: number | null;
+    p90_seconds: number | null;
+  };
+  trust_propagation: {
+    promoted_artifacts: number;
+    p50_seconds: number | null;
+    p90_seconds: number | null;
+  };
+  staleness_cost: {
+    shadow_hits_last_7d: number;
+    expiring_soon_hits_last_7d: number;
+  };
+};
+
 export class BackendError extends Error {
   constructor(
     public status: number,
@@ -108,6 +134,9 @@ export const backend = {
   audit: {
     list: (slug: string) =>
       request<{ events: AuditEvent[] }>(`/kindreds/${slug}/audit`),
+  },
+  health: {
+    get: (slug: string) => request<KindredHealth>(`/kindreds/${slug}/health`),
   },
   invites: {
     accept: (token: string) =>

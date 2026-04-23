@@ -60,7 +60,7 @@ async def test_retrieve_top_k_finds_relevant(db_session):
         body=b"useEffect cleanup patterns", provider=provider,
     )
     # Query that should match the first artefact closely
-    results = await retrieve_top_k(
+    results, _ = await retrieve_top_k(
         db_session, kindred_id=setup["kindred"].id,
         query="postgres-bloat database VACUUM FULL on bloated tables",
         provider=provider, k=2,
@@ -82,14 +82,14 @@ async def test_retrieve_filters_expired(db_session):
         setup, logical_name="stale-doc", tags=[],
         body=b"old content here", valid_until=expired, provider=provider,
     )
-    hits_default = await retrieve_top_k(
+    hits_default, _ = await retrieve_top_k(
         db_session, kindred_id=setup["kindred"].id,
         query="stale-doc old content here", provider=provider, k=10,
     )
     names = {a.logical_name for a, _ in hits_default}
     assert "stale-doc" not in names
 
-    hits_include = await retrieve_top_k(
+    hits_include, _ = await retrieve_top_k(
         db_session, kindred_id=setup["kindred"].id,
         query="stale-doc old content here", provider=provider, k=10,
         include_expired=True,
@@ -104,8 +104,52 @@ async def test_retrieve_skips_null_embedding(db_session):
     setup = await make_full_setup(db_session, slug="rag3")  # NO provider → no embedding
     setup["db"] = db_session
     # Seed artefact has no embedding — should be excluded
-    results = await retrieve_top_k(
+    results, _ = await retrieve_top_k(
         db_session, kindred_id=setup["kindred"].id,
         query="anything", provider=provider, k=10,
     )
     assert results == []
+
+
+@pytest.mark.asyncio
+async def test_retrieve_top_k_returns_expired_shadow_count(db_session):
+    """retrieve_top_k returns (scored, expired_shadow_count) — the number of
+    top-K matches that would have surfaced if expiry filter were disabled."""
+    provider = FakeEmbeddingProvider()
+    setup = await make_full_setup(db_session, slug="rag-shadow", embedding_provider=provider)
+    setup["db"] = db_session
+    # Expired artefact whose body matches the query text exactly — would have
+    # been the top hit without the expiry filter.
+    expired_when = datetime.now(UTC) - timedelta(days=1)
+    await _add_artifact(
+        setup, logical_name="stale-topic", tags=[],
+        body=b"stale topic exact match body",
+        valid_until=expired_when, provider=provider,
+    )
+    # Fresh artefact with unrelated body — lower similarity than expired.
+    await _add_artifact(
+        setup, logical_name="fresh-unrelated", tags=[],
+        body=b"totally different content about cats",
+        provider=provider,
+    )
+
+    # Query matches the expired artefact's body text — expired would be top-1
+    # without the filter. With filter, fresh should surface and shadow == 1.
+    scored, expired_shadow = await retrieve_top_k(
+        db_session, kindred_id=setup["kindred"].id,
+        query="stale topic exact match body",
+        provider=provider, k=5,
+    )
+    returned_names = [a.logical_name for a, _ in scored]
+    assert "stale-topic" not in returned_names  # expired filtered out
+    assert "fresh-unrelated" in returned_names
+    assert expired_shadow == 1  # expired would have been in top-K
+    # And sanity: include_expired=True returns zero shadow count.
+    scored_all, shadow_all = await retrieve_top_k(
+        db_session, kindred_id=setup["kindred"].id,
+        query="stale topic exact match body",
+        provider=provider, k=5, include_expired=True,
+    )
+    all_names = [a.logical_name for a, _ in scored_all]
+    assert "stale-topic" in all_names
+    assert shadow_all == 0

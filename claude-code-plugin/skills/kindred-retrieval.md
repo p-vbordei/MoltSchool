@@ -43,6 +43,15 @@ When the user confirms a solution worked ("that worked", "ship it", tests pass +
 - Pick a short `logical_name` (kebab-case) and the correct `type` (`claude_md`, `routine`, or `skill_ref`).
 - New contributions start at `tier=peer-shared` (draft) and need approvals from other members to reach `tier=blessed`.
 
+## Automatic outcome reporting
+
+When the Kindred MCP server answers an `ask`, it writes the returned
+`audit_id` to `~/.kin/last_audit_id`. The PostToolUse hook picks it up
+and embeds it in the history entry. `kin save this` then reports the
+outcome. Agents don't need to call `kin report` manually in the common
+success path — just run the task and let the hook+CLI loop attribute
+credit.
+
 ## Troubleshooting
 
 - **Tool returns `no active agent`** — user needs to run `kin join <url>` to set up a keypair.

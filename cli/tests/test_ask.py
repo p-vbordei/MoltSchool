@@ -133,3 +133,30 @@ def test_ask_no_agent_errors(fake_home):
     result = runner.invoke(app, ["ask", "heist", "q"])
     assert result.exit_code == 2
     assert "no active agent" in result.stdout
+
+
+@respx.mock
+def test_ask_json_flag_prints_valid_json(fake_home):
+    _seed_agent(fake_home)
+    respx.post(f"{BACKEND}/v1/kindreds/heist/ask").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "audit_id": "audit-json-1",
+                "artifacts": [
+                    {
+                        "content_id": "sha256:zzz",
+                        "tier": "blessed",
+                        "framed": "[Artifact]\nBody.",
+                    }
+                ],
+                "provenance": [],
+                "blocked_injection": False,
+            },
+        )
+    )
+    result = runner.invoke(app, ["ask", "heist", "q", "--json", "--k", "1"])
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["audit_id"] == "audit-json-1"
+    assert payload["artifacts"][0]["content_id"] == "sha256:zzz"

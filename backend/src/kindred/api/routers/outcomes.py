@@ -20,5 +20,8 @@ async def outcome(
         audit_id = UUID(req.audit_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    await report_outcome(session, audit_id=audit_id, result=req.result, notes=req.notes)
+    await report_outcome(
+        session, audit_id=audit_id, result=req.result,
+        notes=req.notes, chosen_content_id=req.chosen_content_id,
+    )
     return {"ok": True}

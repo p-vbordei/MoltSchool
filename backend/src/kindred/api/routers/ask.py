@@ -78,7 +78,10 @@ async def ask(
         blocked_payload = {
             "query": q,
             "artifact_ids_returned": [],
+            "scores": [],
+            "tiers": [],
             "k": req.k,
+            "expired_shadow_hits": 0,
             "blocked_injection": True,
             "patterns": [h.pattern for h in hits],
         }
@@ -96,16 +99,24 @@ async def ask(
         )
 
     # Retrieve (validity filter inside — I6)
-    scored = await retrieve_top_k(
+    scored, expired_shadow = await retrieve_top_k(
         session, kindred_id=k.id, query=q, provider=provider, k=req.k,
     )
-    # Tier compute
-    with_tier = []
-    for art, _score in scored:
+    # Compute tier alongside score — keep a single ordered list.
+    scored_with_tier: list[tuple] = []
+    for art, score in scored:
         tier = await compute_tier(session, artifact=art, threshold=k.bless_threshold)
-        with_tier.append((art, tier))
+        scored_with_tier.append((art, score, tier))
 
-    filtered = filter_by_tier(with_tier, include_peer_shared=req.include_peer_shared)
+    # filter_by_tier takes (artifact, tier) pairs — adapt.
+    tier_filtered = filter_by_tier(
+        [(a, t) for a, _s, t in scored_with_tier],
+        include_peer_shared=req.include_peer_shared,
+    )
+    # Re-align score + tier with the filtered content_ids.
+    score_by_cid = {a.content_id: s for a, s, _t in scored_with_tier}
+    tier_by_cid = {a.content_id: t for a, _s, t in scored_with_tier}
+    filtered = tier_filtered  # downstream framing code uses `filtered`
 
     # Frame + provenance
     artifacts_out = []
@@ -139,7 +150,10 @@ async def ask(
         payload={
             "query": q,
             "artifact_ids_returned": [a.content_id for a, _ in filtered],
+            "scores": [score_by_cid[a.content_id] for a, _ in filtered],
+            "tiers": [tier_by_cid[a.content_id] for a, _ in filtered],
             "k": req.k,
+            "expired_shadow_hits": expired_shadow,
             "blocked_injection": False,
         },
         facilitator_sk=settings.facilitator_signing_key,

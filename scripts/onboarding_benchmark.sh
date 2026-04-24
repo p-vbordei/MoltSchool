@@ -80,7 +80,9 @@ kin join "$INVITE_URL" --email "bench@kindred.local" --name "Bench User" \
     || die "kin join failed"
 ok "joined kindred"
 
-ASK_JSON=$(kin ask "$KINDRED_SLUG" "tdd workflow" --k 1 --json) \
+# --peer-shared: freshly seeded artifacts are unblessed until members bless them;
+# the benchmark measures TTFUR for a real joiner, which includes peer-shared hits.
+ASK_JSON=$(kin ask "$KINDRED_SLUG" "tdd workflow" --k 1 --peer-shared --json) \
     || die "kin ask failed"
 
 AUDIT_ID=$(python3 -c "import json,sys; print(json.loads(sys.stdin.read())['audit_id'])" <<<"$ASK_JSON")

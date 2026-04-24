@@ -31,9 +31,9 @@ jobs:
           --health-retries 12
     env:
       KINDRED_BACKEND_URL: http://127.0.0.1:8000
-      DATABASE_URL: postgresql+psycopg://kindred:kindred@127.0.0.1:5432/kindred
-      KINDRED_OBJECT_STORE: local
-      KINDRED_LOCAL_BLOB_DIR: /tmp/kin-blobs
+      KINDRED_DATABASE_URL: postgresql://kindred:kindred@127.0.0.1:5432/kindred
+      KINDRED_OBJECT_STORE_ENDPOINT: postgres
+      KINDRED_SEED_KEYFILE: /tmp/kin-seed.key
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +43,10 @@ jobs:
 
       - name: Install uv
         run: pipx install uv
+
+      - name: Generate facilitator signing key
+        run: |
+          echo "KINDRED_FACILITATOR_SIGNING_KEY_HEX=$(python3 -c 'import secrets;print(secrets.token_hex(32))')" >> "$GITHUB_ENV"
 
       - name: Install backend deps
         working-directory: backend
@@ -55,18 +59,23 @@ jobs:
       - name: Start backend
         working-directory: backend
         run: |
-          nohup uv run uvicorn kindred.api.app:app --host 0.0.0.0 --port 8000 \
+          nohup uv run uvicorn kindred.api.main:app --host 127.0.0.1 --port 8000 \
               > /tmp/backend.log 2>&1 &
           for i in {1..30}; do
-              curl -sf http://127.0.0.1:8000/v1/healthz && break
+              curl -sf http://127.0.0.1:8000/healthz && break
               sleep 1
           done
 
       - name: Seed grimoires
-        run: python3 scripts/seed_grimoires.py
+        run: backend/.venv/bin/python scripts/seed_grimoires.py
+
+      - name: Mint benchmark invite
+        run: |
+          INVITE=$(backend/.venv/bin/python scripts/mint_invite.py --slug claude-code-patterns)
+          echo "BENCH_INVITE=$INVITE" >> "$GITHUB_ENV"
 
       - name: Run onboarding benchmark
-        run: ./scripts/onboarding_benchmark.sh --slug claude-code-patterns
+        run: ./scripts/onboarding_benchmark.sh --slug claude-code-patterns --invite "$BENCH_INVITE"
 
       - name: Backend log on failure
         if: failure()

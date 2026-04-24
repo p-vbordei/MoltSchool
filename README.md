@@ -2,157 +2,119 @@
 
 > A shared notebook for your team. You write. Every teammate's AI reads.
 
-Write something once. Every AI on the team knows. Old pages fade if no
-one touches them, so your AI never acts on stale notes. Works with
-Claude Code today; more agents next.
+## The problem
 
-## Live deployment
+Two engineers. Same team. Same sprint. Both ask their Claude, "add a
+migration for a `users.role` column."
 
-Kindred runs on Railway as of 2026-04-18. All three services are public
-and healthy.
+One gets back the pattern the team settled on last quarter: separate
+up/down, idempotent, backfill with a data guard. The other gets back
+something that works in isolation — but skips the backfill and ends
+up on staging with a typo'd column name.
 
-| Service          | URL                                                              |
-|------------------|------------------------------------------------------------------|
-| Backend API      | https://kindred-backend-production-4024.up.railway.app           |
-| Web UI           | https://kindred-web-production.up.railway.app                    |
-| KAF spec site    | https://kindredformat-production.up.railway.app                  |
+Code review catches the drift. Someone reruns the migration. An hour
+goes sideways.
 
-Health check: `curl https://kindred-backend-production-4024.up.railway.app/healthz` → `{"status":"ok"}`.
+The model isn't the problem. Every AI on the team reasons from a
+different pile of context, re-deriving what the team already decided
+— and sometimes deriving it wrong.
 
-Sample invite URL (sends you through the web landing → install CTAs):
-`https://kindred-web-production.up.railway.app/k/claude-code-patterns?inv=<token>`.
+## What Kindred does
 
-Railway project id: `76eb1167-4e23-40bc-8524-89f3d7a17e96`. For how the
-stack is deployed (Dockerfile + rootDirectory per service, Postgres
-plugin, env wiring) see [`docs/deployment.md`](./docs/deployment.md).
+You write the routine once. Every agent on the team retrieves it,
+with provenance: who wrote it, when, and whether it's still blessed.
+Pages that no one touches for six months are flagged stale, so no
+agent can quietly act on decisions no one remembers making. When an
+answer turns out wrong, the caller reports it, and the retrieval
+gets less wrong next time.
 
-## What's in this repo
+Kindred doesn't generate. The backend retrieves, ranks, and frames;
+your agent does the reasoning — but over shared facts.
 
-| Path                    | What it is                                                   |
-|-------------------------|--------------------------------------------------------------|
-| `backend/`              | FastAPI service — users, kindreds, artifacts, ask, audit.    |
-| `cli/`                  | `kin` command-line client (`pip install kindred-client`).    |
-| `claude-code-plugin/`   | Claude Code plugin: MCP server + skill + PostToolUse hook.   |
-| `web/`                  | Next.js 15 web UI — dashboard, invite landing, audit view.   |
-| `kindredformat/`        | Static site for the KAF 0.1 spec (kindredformat.org).        |
-| `docs/seed-grimoires/`  | 5 starter notebooks — markdown pages you can seed.           |
-| `docs/`                 | Quick start, threat model, deployment, KAF spec mirror.      |
-| `scripts/`              | Seed, invite-mint, onboarding benchmark, integration smoke.  |
-| `.github/workflows/`    | CI — backend, cli, web, and weekly launch benchmark.         |
-
-## Quick start
+## Install
 
 ```bash
 pip install kindred-client
-
-# Public kindred: one-line install, no invite needed.
-kin install claude-code-patterns --backend https://kindred-backend-production-4024.up.railway.app
-
-# Private kindred: paste an invite URL.
-kin install <invite-url>
-
-kin ask claude-code-patterns "how do I structure commits?"
+kin install claude-code-patterns
+kin ask claude-code-patterns "how do we structure commits?"
 ```
 
-Full quick start: [`docs/quick-start.md`](./docs/quick-start.md).
+Three commands. You're reading four curated pages about Claude Code
+conventions — the same pages the next teammate's agent will see.
+Claude Code plugin (MCP + skill + PostToolUse hook):
+[`claude-code-plugin/README.md`](./claude-code-plugin/README.md).
+
+## Live deployment
+
+Kindred runs on Railway.
+
+| Service     | URL                                                      |
+|-------------|----------------------------------------------------------|
+| Backend API | https://kindred-backend-production-4024.up.railway.app   |
+| Web UI      | https://kindred-web-production.up.railway.app            |
+| KAF spec    | https://kindredformat-production.up.railway.app          |
+
+Health: `curl .../healthz` → `{"status":"ok"}`.
+
+## Repo layout
+
+| Path                    | What it is                                               |
+|-------------------------|----------------------------------------------------------|
+| `backend/`              | FastAPI — users, kindreds, artifacts, ask, audit.        |
+| `cli/`                  | `kin` CLI (`pip install kindred-client`).                |
+| `claude-code-plugin/`   | Claude Code plugin: MCP + skill + PostToolUse hook.      |
+| `web/`                  | Next.js 15 — dashboard, invite landing, audit view.      |
+| `kindredformat/`        | KAF 0.1 spec site.                                       |
+| `docs/seed-grimoires/`  | Five starter notebooks you can seed.                     |
+| `scripts/`              | Seed, invite mint, onboarding benchmark, smoke test.     |
 
 ## Network health
 
-Every kindred exposes four first-principles health indicators:
+Every kindred surfaces four indicators at `/dashboard/<slug>/health`:
 
-- **Retrieval utility** — success rate, top-1 precision, mean rank of the chosen artifact.
-- **Time to first useful retrieval (TTFUR)** — p50/p90 from `join` to the agent's first reported success.
-- **Trust propagation** — p50/p90 from `publish` to the threshold-th blessing on an artifact.
-- **Staleness cost** — shadow hits + soon-to-expire returns over the last 7 days.
+- **Retrieval utility** — success rate, top-1 precision, mean rank.
+- **Time to first useful retrieval** — p50/p90 from join to first reported success.
+- **Trust propagation** — p50/p90 from publish to threshold-th blessing.
+- **Staleness cost** — shadow hits plus soon-to-expire returns over 7 days.
 
-View the indicators at `/dashboard/<slug>/health`, or fetch them as JSON via
-`GET /v1/kindreds/<slug>/health` (requires `X-Agent-Pubkey` of a kindred member).
-
-## KAF spec
-
-The Kindred Artifact Format 0.1 is published as a static site; the
-source markdown lives in this repo.
-
-- Spec: [`kindredformat/content/kaf-spec-0.1.md`](./kindredformat/content/kaf-spec-0.1.md)
-- Examples: [`kindredformat/content/kaf-examples.md`](./kindredformat/content/kaf-examples.md)
-- Implementers guide: [`kindredformat/content/kaf-implementers-guide.md`](./kindredformat/content/kaf-implementers-guide.md)
+JSON: `GET /v1/kindreds/<slug>/health` with a member's `X-Agent-Pubkey`.
 
 ## Run locally
-
-```bash
-# 1. Start Postgres + MinIO
-docker compose -f backend/docker-compose.yml up -d
-
-# 2. Install backend deps, set env, run migrations
-cd backend && uv sync
-export KINDRED_DATABASE_URL="postgresql+asyncpg://kindred:kindred@localhost:5432/kindred"
-export KINDRED_OBJECT_STORE_ENDPOINT="http://localhost:9000"
-export KINDRED_OBJECT_STORE_ACCESS_KEY="minioadmin"
-export KINDRED_OBJECT_STORE_SECRET_KEY="minioadmin"
-export KINDRED_OBJECT_STORE_BUCKET="kindred-artifacts"
-export KINDRED_FACILITATOR_SIGNING_KEY_HEX="$(python3 -c 'import secrets;print(secrets.token_hex(32))')"
-uv run alembic upgrade head
-
-# 3. Start the backend
-uv run uvicorn kindred.api.main:app --host 0.0.0.0 --port 8000 --reload
-
-# 4. Seed the 5 flagship grimoires (from repo root, requires cli/.venv synced)
-cd ../cli && uv sync
-export KINDRED_BACKEND_URL="http://127.0.0.1:8000"
-uv run python ../scripts/seed_grimoires.py
-
-# 5. Mint an invite and join with the CLI
-INVITE=$(uv run python ../scripts/mint_invite.py --slug claude-code-patterns)
-uv run kin join "$INVITE"
-uv run kin ask claude-code-patterns "tdd"
-```
-
-End-to-end sanity check (brings up docker, seeds, joins, asks, tears down):
 
 ```bash
 ./scripts/integration_smoke.sh
 ```
 
-Deploy to Railway (or any Docker host): see [`docs/deployment.md`](./docs/deployment.md).
+Brings up Postgres, runs migrations, starts the backend, seeds all
+five grimoires, joins with a test agent, asks a question, tears
+down. Step-by-step: [`docs/quick-start.md`](./docs/quick-start.md).
+Railway deploy: [`docs/deployment.md`](./docs/deployment.md).
 
-## Plans
+## KAF spec
 
-This system was built in 7 plans. Each plan is a self-contained slice
-with its own tests and commits.
+The Kindred Artifact Format 0.1 — how pages are stored and signed.
 
-1. [Plan 01 — Backend core](./docs/superpowers/plans/2026-04-18-kindred-01-backend-core.md) — users, kindreds, invites, artifacts, audit.
-2. [Plan 02 — Facilitator](./docs/superpowers/plans/2026-04-18-kindred-02-facilitator.md) — retrieval, ranking, sanitiser, outcome telemetry.
-3. [Plan 03 — CLI](./docs/superpowers/plans/2026-04-18-kindred-03-cli.md) — `kin` CLI.
-4. [Plan 04 — Claude Code plugin](./docs/superpowers/plans/2026-04-18-kindred-04-claude-code-plugin.md) — MCP server, skill, PostToolUse hook.
-5. Plan 05 (Cursor) skipped — user doesn't use Cursor.
-6. [Plan 06 — Web UI](./docs/superpowers/plans/2026-04-18-kindred-06-web-ui.md) — Next.js web UI + WebCrypto self-custody.
-7. [Plan 07 — KAF + launch](./docs/superpowers/plans/2026-04-18-kindred-07-kaf-launch.md) — KAF 0.1 spec site, 5 seed grimoires, launch checklist.
-
-## Contributing
-
-- Read [`docs/seed-grimoires/kindred-patterns/claude_md.md`](./docs/seed-grimoires/kindred-patterns/claude_md.md) for the behavioural rules we hold ourselves to.
-- Every change ships with the test that would have caught its absence.
-- One concept per commit; see [`docs/seed-grimoires/claude-code-patterns/routine-git-commits-per-task.md`](./docs/seed-grimoires/claude-code-patterns/routine-git-commits-per-task.md).
-- File issues on GitHub. For security reports, see `docs/transparency.md`.
-
-## Launch
-
-See [`docs/launch/checklist.md`](./docs/launch/checklist.md) for the
-launch gate and post-launch metric plan.
+- [Spec](./kindredformat/content/kaf-spec-0.1.md)
+- [Examples](./kindredformat/content/kaf-examples.md)
+- [Implementers guide](./kindredformat/content/kaf-implementers-guide.md)
 
 ## License
 
-Kindred is multi-licensed to match each component's role:
+Multi-licensed by role. Each package has its own `LICENSE` (and
+`NOTICE` for Apache-2.0 parts); redistribution must preserve
+`NOTICE` per §4(d).
 
-| Path                         | License        | Why                                                                 |
-|------------------------------|----------------|---------------------------------------------------------------------|
-| `backend/`, `web/`, root     | **AGPL-3.0**   | Network-service copyleft. Forks run as a service must stay open.    |
-| `cli/`                       | **Apache-2.0** | Client tool — permissive adoption, patent grant, NOTICE attribution. |
-| `claude-code-plugin/`        | **Apache-2.0** | Same reasoning as the CLI.                                          |
-| `kindredformat/` (code)      | **Apache-2.0** | Reference implementation — anyone can ship a KAF site.              |
-| `kindredformat/content/` (spec text) | **CC-BY-4.0** | Specification is content, not code. Attribution required.   |
+| Path                                             | License    |
+|--------------------------------------------------|------------|
+| `backend/`, `web/`, root                         | AGPL-3.0   |
+| `cli/`, `claude-code-plugin/`, `kindredformat/` (code) | Apache-2.0 |
+| `kindredformat/content/` (spec text)             | CC-BY-4.0  |
 
-Each package has its own `LICENSE` (and `NOTICE` for Apache-2.0 parts). If
-you redistribute an Apache-2.0-licensed component, preserve the `NOTICE`
-file per §4(d) of the Apache License. If you implement or adapt the KAF
-spec, credit per [`kindredformat/content/NOTICE`](./kindredformat/content/NOTICE).
+## Contributing
+
+- Behavioural rules: [`kindred-patterns/claude_md.md`](./docs/seed-grimoires/kindred-patterns/claude_md.md).
+- Every change ships with the test that would have caught its absence.
+- One concept per commit.
+- Security reports: [`docs/transparency.md`](./docs/transparency.md).
+
+Launch gate: [`docs/launch/checklist.md`](./docs/launch/checklist.md).

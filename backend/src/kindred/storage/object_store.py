@@ -27,6 +27,63 @@ class InMemoryObjectStore:
         return content_id in self._data
 
 
+class PostgresObjectStore:
+    """Stores artifact bodies as BYTEA rows in the same Postgres DB.
+
+    Suitable when artifact bodies are small (markdown, config snippets) and
+    scale is modest — avoids running a separate object-store service. Adapter
+    is API-compatible with MinioObjectStore, so swapping later for MinIO/R2/S3
+    is a single env-var change; data migration is a row-by-row copy if needed.
+
+    Content-addressed: `content_id` is PK, so duplicate puts are idempotent by
+    primary-key constraint (IntegrityError caught and ignored).
+    """
+
+    def __init__(self, session_factory) -> None:
+        self._session_factory = session_factory
+
+    async def put(self, content_id: str, data: bytes) -> None:
+        from sqlalchemy import text
+        from sqlalchemy.exc import IntegrityError
+
+        async with self._session_factory() as s:
+            try:
+                await s.execute(
+                    text(
+                        "INSERT INTO artifact_bodies (content_id, data) "
+                        "VALUES (:cid, :data)"
+                    ),
+                    {"cid": content_id, "data": data},
+                )
+                await s.commit()
+            except IntegrityError:
+                # Same cid already stored; content-addressed = same bytes. Idempotent.
+                await s.rollback()
+
+    async def get(self, content_id: str) -> bytes:
+        from sqlalchemy import text
+
+        async with self._session_factory() as s:
+            result = await s.execute(
+                text("SELECT data FROM artifact_bodies WHERE content_id = :cid"),
+                {"cid": content_id},
+            )
+            row = result.one_or_none()
+            if row is None:
+                raise ObjectNotFoundError(content_id)
+            return bytes(row[0])
+
+    async def exists(self, content_id: str) -> bool:
+        from sqlalchemy import text
+
+        async with self._session_factory() as s:
+            result = await s.execute(
+                text("SELECT 1 FROM artifact_bodies WHERE content_id = :cid"),
+                {"cid": content_id},
+            )
+            return result.one_or_none() is not None
+
+
 class MinioObjectStore:
     def __init__(self, endpoint: str, access: str, secret: str, bucket: str) -> None:
         from minio import Minio

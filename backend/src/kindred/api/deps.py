@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from kindred.config import Settings
 from kindred.db import make_engine, make_session_factory
 from kindred.embeddings.provider import EmbeddingProvider, get_provider
-from kindred.storage.object_store import InMemoryObjectStore, MinioObjectStore, ObjectStore
+from kindred.storage.object_store import (
+    InMemoryObjectStore,
+    MinioObjectStore,
+    ObjectStore,
+    PostgresObjectStore,
+)
 
 _settings: Settings | None = None
 _engine = None
@@ -34,11 +39,14 @@ def get_object_store() -> ObjectStore:
     global _store
     if _store is None:
         s = get_settings()
-        # In-memory store: dev default OR explicit opt-in via endpoint=memory /
-        # endpoint ending with ':0' (e.g. http://localhost:0). Persists only
-        # within the process — use only until S3/R2 wiring lands.
+        # Three backends, selected by endpoint value:
+        #   memory / "" / ":0"  → InMemory (dev, lost on restart)
+        #   postgres / pg       → PostgresObjectStore (bodies in same DB, no extra service)
+        #   anything else       → MinioObjectStore (S3-compatible: MinIO, R2, S3, B2…)
         if s.object_store_endpoint in {"memory", ""} or s.object_store_endpoint.endswith(":0"):
             _store = InMemoryObjectStore()
+        elif s.object_store_endpoint in {"postgres", "pg"}:
+            _store = PostgresObjectStore(get_session_factory())
         else:
             _store = MinioObjectStore(
                 s.object_store_endpoint,

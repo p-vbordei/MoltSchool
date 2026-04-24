@@ -35,10 +35,10 @@ value.
 | Variable                              | Value                                                              |
 |---------------------------------------|--------------------------------------------------------------------|
 | `KINDRED_DATABASE_URL`                | `${{Postgres-EBkW.DATABASE_URL}}` (automatic reference)            |
-| `KINDRED_OBJECT_STORE_ENDPOINT`       | `http://localhost:0` (InMemory store — see "Storage" below)        |
-| `KINDRED_OBJECT_STORE_ACCESS_KEY`     | `unused`                                                           |
-| `KINDRED_OBJECT_STORE_SECRET_KEY`     | `unused`                                                           |
-| `KINDRED_OBJECT_STORE_BUCKET`         | `unused`                                                           |
+| `KINDRED_OBJECT_STORE_ENDPOINT`       | `postgres` (stores bodies in Postgres — see "Storage" below)       |
+| `KINDRED_OBJECT_STORE_ACCESS_KEY`     | (omit — not needed in `postgres` mode)                             |
+| `KINDRED_OBJECT_STORE_SECRET_KEY`     | (omit — not needed in `postgres` mode)                             |
+| `KINDRED_OBJECT_STORE_BUCKET`         | (omit — not needed in `postgres` mode)                             |
 | `KINDRED_FACILITATOR_SIGNING_KEY_HEX` | 64-char hex — `python3 -c 'import secrets;print(secrets.token_hex(32))'` |
 | `KINDRED_ENV`                         | `prod`                                                             |
 | `RAILWAY_DOCKERFILE_PATH`             | `Dockerfile`                                                       |
@@ -68,16 +68,106 @@ to `postgresql+asyncpg://` — no manual transformation needed.
 | `RAILWAY_DOCKERFILE_PATH` | `Dockerfile` |
 | `PORT`                    | `3000`       |
 
-## Storage (current limitation)
+## Storage
 
-The backend currently uses `InMemoryObjectStore` (triggered by endpoint
-`:0` or `memory`). **Artifact bodies are lost on every redeploy.**
-Metadata (in Postgres) survives; bodies don't.
+Artifact bodies can live in one of three backends, picked by the value of
+`KINDRED_OBJECT_STORE_ENDPOINT`:
 
-Fix before serious use: wire S3, Cloudflare R2, or a Railway volume-backed
-MinIO. Toggle by setting `KINDRED_OBJECT_STORE_ENDPOINT` to the real host
-and populating access/secret keys. The `MinioObjectStore` adapter in
-`backend/src/kindred/storage/object_store.py` is already wired.
+| Endpoint value                | Backend               | When to use                                       |
+|-------------------------------|-----------------------|---------------------------------------------------|
+| `memory`, empty, ends in `:0` | `InMemoryObjectStore` | Local dev, tests. **Lost on every restart.**       |
+| `postgres` or `pg`            | `PostgresObjectStore` | **Recommended for small/medium teams.** Bodies as BYTEA in the same DB you already pay for. Zero extra infra. |
+| Anything else                 | `MinioObjectStore`    | S3-compatible: MinIO service, Cloudflare R2, AWS S3, Backblaze B2. Use when bodies get large or you want to scale storage independently. |
+
+Switching is a single env-var change. Adapters share one `ObjectStore`
+protocol (`backend/src/kindred/storage/object_store.py`).
+
+### Recommended: Postgres object store (zero extra cost)
+
+For teams under ~1 GB of total artifact body storage (markdown-sized
+patterns are typically 1-50 KB each → ~20k artifacts before you hit 1 GB),
+store bodies directly in the Postgres you already run. No new service, no
+new volume, no new failure modes.
+
+**On `kindred-backend` (Railway service), set a single env var:**
+
+```
+KINDRED_OBJECT_STORE_ENDPOINT=postgres
+```
+
+You can remove `KINDRED_OBJECT_STORE_ACCESS_KEY`,
+`KINDRED_OBJECT_STORE_SECRET_KEY`, and `KINDRED_OBJECT_STORE_BUCKET` —
+they're ignored in this mode (and optional in `Settings` now).
+
+**Run migrations:** the `artifact_bodies` table comes from Alembic
+migration `0008_artifact_bodies.py`. It runs automatically on backend
+startup (via the Dockerfile's `alembic upgrade head`). No manual SQL.
+
+**Redeploy `kindred-backend`.** Next artifact upload writes to Postgres.
+Redeploys preserve bodies because Postgres-backed volume already does.
+
+**Smoke test:**
+
+```bash
+export KINDRED_BACKEND_URL=https://kindred-backend-production-4024.up.railway.app
+
+INVITE=$(uv run python scripts/mint_invite.py --slug claude-code-patterns)
+uv run kin join "$INVITE"
+uv run kin contribute claude-code-patterns /tmp/test-survival.md \
+  --name "survival-test" --tags smoke
+
+# Force a redeploy of kindred-backend (Railway UI or `railway redeploy`)
+
+# Verify the body survives
+uv run kin ask claude-code-patterns "survival"
+```
+
+If the body comes back post-redeploy, the migration is done.
+
+### Scale-out: MinIO on Railway
+
+Only needed once total body storage pushes past what you want in Postgres
+(rough threshold: 5-10 GB, at which point Postgres backup size and query
+performance start to matter). The MinioObjectStore adapter already exists;
+you add a 5th Railway service from image `minio/minio:latest` with a
+Railway volume at `/data`.
+
+Steps:
+
+1. **New service** from Docker image `minio/minio:latest`. Start command
+   `server /data --console-address ":9001"`. Expose internal port `9000`.
+2. **Attach a volume** on the `minio` service at mount path `/data`. Size
+   to taste; billed at $0.25/GB/month.
+3. **MinIO credentials** — set `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD`
+   on the minio service (generate with
+   `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`).
+4. **Point backend at MinIO** via four env vars on `kindred-backend`:
+
+   ```
+   KINDRED_OBJECT_STORE_ENDPOINT=http://minio.railway.internal:9000
+   KINDRED_OBJECT_STORE_ACCESS_KEY=${{minio.MINIO_ROOT_USER}}
+   KINDRED_OBJECT_STORE_SECRET_KEY=${{minio.MINIO_ROOT_PASSWORD}}
+   KINDRED_OBJECT_STORE_BUCKET=kindred-artifacts
+   ```
+
+5. **Redeploy.** The MinioObjectStore adapter auto-creates the bucket on
+   first write (`make_bucket` if `not bucket_exists`).
+
+### Alternative: external S3-compatible (R2, S3, B2)
+
+Same as MinIO, different endpoint. Cloudflare R2 is free up to 10 GB
+storage + 10 GB egress/month — attractive if you want managed and don't
+mind depending on a non-Railway service. Just point the four env vars at
+R2's endpoint (e.g. `https://<account-id>.r2.cloudflarestorage.com`) with
+the R2 access/secret you generate in their dashboard.
+
+### Migrating between backends
+
+Bodies are content-addressed (`content_id = sha256(body)`), so moving
+data between backends is a row-by-row copy — no re-IDing, no metadata
+changes. A migration script would iterate all `artifacts.content_id`
+values, fetch from the old store, write to the new, and cut over by
+env var. Not needed until storage actually moves.
 
 ## Deploy from scratch
 
@@ -251,7 +341,7 @@ care about first.
 
 ## Post-launch follow-ups
 
-1. **Switch to S3/R2 for artifact bodies.** InMemoryObjectStore loses data on redeploy.
+1. ~~**Switch to S3/R2 for artifact bodies.**~~ Addressed — `PostgresObjectStore` lands in migration `0008_artifact_bodies.py`. Flip `KINDRED_OBJECT_STORE_ENDPOINT=postgres` on the backend to survive redeploys with zero extra infra. See "Storage" section above.
 2. **Real GitHub OAuth App.** The placeholders in `GITHUB_ID`/`GITHUB_SECRET` block Web UI sign-in.
 3. **Custom domain.** `railway domain --custom kindred.sh` once DNS points at Railway.
 4. **Publish `kindred-client` to PyPI.** Current invite flow uses `pip install ./cli`.

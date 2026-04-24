@@ -10,6 +10,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -46,3 +47,20 @@ class Blessing(Base, TimestampMixin):
     signer_pubkey: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     signer_agent_id: Mapped[UUID] = mapped_column(ForeignKey("agents.id"), nullable=False)
     sig: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+
+
+class ArtifactBody(Base):
+    """In-DB storage for artifact bodies, keyed by content_id.
+
+    Used by PostgresObjectStore (kindred.storage.object_store) when the backend
+    is configured with KINDRED_OBJECT_STORE_ENDPOINT=postgres. Avoids running a
+    separate object-store service at small scale. Content-addressed — content_id
+    is a SHA-256 hash, so primary key = natural deduplication.
+    """
+    __tablename__ = "artifact_bodies"
+
+    content_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[object] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

@@ -1,0 +1,49 @@
+name: cli-release
+
+on:
+  push:
+    tags:
+      - "kindred-client-v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: pipx install uv
+
+      - name: Verify tag matches pyproject version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#kindred-client-v}"
+          PKG_VERSION="$(grep -m1 '^version' cli/pyproject.toml | cut -d'"' -f2)"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "ERR: tag $GITHUB_REF_NAME (version=$TAG_VERSION) does not match cli/pyproject.toml version=$PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Build sdist + wheel
+        working-directory: cli
+        run: uv build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: cli/dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # OIDC — Trusted Publishing, no API token needed
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
